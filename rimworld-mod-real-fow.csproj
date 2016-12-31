@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9E008B68-2B98-4AC2-9C65-832D13F94746}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>RimworldFoW</RootNamespace>
+    <AssemblyName>RimWorldFoWMod</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\SteamLibrary\SteamApps\common\RimWorld\Mods\RealFoW\Assemblies\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\SteamLibrary\SteamApps\common\RimWorld\Mods\RealFoW\Assemblies\</OutputPath>
+    <DefineConstants>
+    </DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp, Version=0.16.6198.16102, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>libs\Assembly-CSharp.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>libs\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\RimWorldRealFoW\MapComponentSeenFog.cs" />
+    <Compile Include="src\RimWorldRealFoW\CompHiddenable.cs" />
+    <Compile Include="src\RimWorldRealFoW\CompFieldOfView.cs" />
+    <Compile Include="src\RimWorldRealFoW\_MouseoverReadout.cs" />
+    <Compile Include="src\RimWorldRealFoW\_Selector.cs" />
+    <Compile Include="src\RimWorldRealFoW\_FloodFillerFog.cs" />
+    <Compile Include="src\RimWorldRealFoW\DetourHook.cs" />
+    <Compile Include="src\RimWorldRealFoW\SectionLayer_FoVLayer.cs" />
+    <Compile Include="src\RimWorldRealFoW\ShadowCaster.cs" />
+    <Compile Include="src\RimWorldRealFoW\RimWorldRealFoW.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="rimworld-mod-real-fow.licenseheader" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LICENSE.md" />
+    <None Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="mod-data\About\About.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="mod-data\Defs\StarterDef.xml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

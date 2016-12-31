@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Real Fog of War and Field of View</name>
+  <author>Luca De Petrillo</author>
+  <targetVersion>0.16.1393</targetVersion>
+  <description>This mod adds real Fog of War and Field of View to limit what can be seen on the map.</description>
+</ModMetaData>
