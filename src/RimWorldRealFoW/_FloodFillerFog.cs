@@ -16,8 +16,6 @@ using Verse;
 
 namespace RimWorldRealFoW {
 	class _FloodFillerFog {
-		public static DetourHook hookFloodUnfog;
-
 		public static FloodUnfogResult FloodUnfog(IntVec3 root, Map map) {
 			FloodUnfogResult result = default(FloodUnfogResult);
 			if (Current.ProgramState == ProgramState.MapInitializing) {

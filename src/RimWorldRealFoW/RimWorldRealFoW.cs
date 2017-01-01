@@ -48,8 +48,9 @@ namespace RimWorldRealFoW {
 			if (method != null) {
 				MethodInfo newMethod = typeof(_FloodFillerFog).GetMethod("FloodUnfog", BindingFlags.Static | BindingFlags.Public);
 				if (newMethod != null) {
-					_FloodFillerFog.hookFloodUnfog = new DetourHook(method, newMethod);
-					Log.Message("Detoured FloodFillerFog.FloodUnfog");
+					if (Detours.TryDetourFromTo(method, newMethod)) {
+						Log.Message("Detoured FloodFillerFog.FloodUnfog");
+					}
 				}
 			}
 		}
@@ -59,8 +60,9 @@ namespace RimWorldRealFoW {
 			if (method != null) {
 				MethodInfo newMethod = typeof(_Selector).GetMethod("Select", BindingFlags.Static | BindingFlags.Public);
 				if (newMethod != null) {
-					_Selector.hookSelect = new DetourHook(method, newMethod);
-					Log.Message("Detoured Selector.Select");
+					if (Detours.TryDetourFromTo(method, newMethod)) {
+						Log.Message("Detoured Selector.Select");
+					}
 				}
 			}
 		}
@@ -70,8 +72,9 @@ namespace RimWorldRealFoW {
 			if (method != null) {
 				MethodInfo newMethod = typeof(_MouseoverReadout).GetMethod("MouseoverReadoutOnGUI", BindingFlags.Static | BindingFlags.Public);
 				if (newMethod != null) {
-					_MouseoverReadout.hookMouseoverReadoutOnGUI = new DetourHook(method, newMethod);
-					Log.Message("Detoured MouseoverReadout.MouseoverReadoutOnGUI");
+					if (Detours.TryDetourFromTo(method, newMethod)) {
+						Log.Message("Detoured MouseoverReadout.MouseoverReadoutOnGUI");
+					}
 				}
 			}
 		}

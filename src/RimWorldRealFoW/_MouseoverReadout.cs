@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using RimworldFoW.src.RimWorldRealFoW;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -18,25 +19,7 @@ using Verse;
 
 namespace RimWorldRealFoW {
 	public static class _MouseoverReadout {
-		public static DetourHook hookMouseoverReadoutOnGUI;
-
 		private static readonly Vector2 BotLeft = new Vector2(15f, 65f);
-
-		private static T getInstancePrivateValue<T>(MouseoverReadout _this, string fieldName) {
-			return (T)_this.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(_this);
-		}
-
-		private static void setInstancePrivateValue(MouseoverReadout _this, string fieldName, object value) {
-			_this.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(_this, value);
-		}
-
-		private static T execInstancePrivate<T>(MouseoverReadout _this, string methodName, params object[] values) {
-			return (T)_this.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(_this, values);
-		}
-
-		private static void execInstancePrivate(MouseoverReadout _this, string methodName, params object[] values) {
-			_this.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(_this, values);
-		}
 
 		public static void MouseoverReadoutOnGUI(this MouseoverReadout _this) {
 			if (Event.current.type != EventType.Repaint) {
@@ -62,19 +45,19 @@ namespace RimWorldRealFoW {
 			}
 			rect = new Rect(_MouseoverReadout.BotLeft.x, (float)UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
 			int num2 = Mathf.RoundToInt(Find.VisibleMap.glowGrid.GameGlowAt(c) * 100f);
-			Widgets.Label(rect, getInstancePrivateValue<string[]>(_this, "glowStrings")[num2]);
+			Widgets.Label(rect, Utils.getInstancePrivateValue<string[]>(_this, "glowStrings")[num2]);
 			num += 19f;
 			rect = new Rect(_MouseoverReadout.BotLeft.x, (float)UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
 			TerrainDef terrain = c.GetTerrain(Find.VisibleMap);
-			if (terrain != getInstancePrivateValue<TerrainDef>(_this, "cachedTerrain")) {
+			if (terrain != Utils.getInstancePrivateValue<TerrainDef>(_this, "cachedTerrain")) {
 				string str = ((double)terrain.fertility <= 0.0001) ? string.Empty : (" " + "FertShort".Translate() + " " + terrain.fertility.ToStringPercent());
-				setInstancePrivateValue(_this, "cachedTerrainString", terrain.LabelCap + ((terrain.passability == Traversability.Impassable) ? null : (" (" + "WalkSpeed".Translate(new object[]
+				Utils.setInstancePrivateValue(_this, "cachedTerrainString", terrain.LabelCap + ((terrain.passability == Traversability.Impassable) ? null : (" (" + "WalkSpeed".Translate(new object[]
 				{
-					execInstancePrivate<string>(_this, "SpeedPercentString", (float)terrain.pathCost)
+					Utils.execInstancePrivate<string>(_this, "SpeedPercentString", (float)terrain.pathCost)
 				}) + str + ")")));
-				setInstancePrivateValue(_this, "cachedTerrain", terrain);
+				Utils.setInstancePrivateValue(_this, "cachedTerrain", terrain);
 			}
-			Widgets.Label(rect, getInstancePrivateValue<string>(_this, "cachedTerrainString"));
+			Widgets.Label(rect, Utils.getInstancePrivateValue<string>(_this, "cachedTerrainString"));
 			num += 19f;
 			Zone zone = c.GetZone(Find.VisibleMap);
 			if (zone != null) {
@@ -89,7 +72,7 @@ namespace RimWorldRealFoW {
 				SnowCategory snowCategory = SnowUtility.GetSnowCategory(depth);
 				string label2 = SnowUtility.GetDescription(snowCategory) + " (" + "WalkSpeed".Translate(new object[]
 				{
-					execInstancePrivate<string>(_this, "SpeedPercentString", (float)SnowUtility.MovementTicksAddOn(snowCategory))
+					Utils.execInstancePrivate<string>(_this, "SpeedPercentString", (float)SnowUtility.MovementTicksAddOn(snowCategory))
 				}) + ")";
 				Widgets.Label(rect, label2);
 				num += 19f;

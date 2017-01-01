@@ -12,13 +12,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorld;
+using RimWorld.Planet;
+using RimworldFoW.src.RimWorldRealFoW;
+using System.Collections.Generic;
 using Verse;
+using Verse.Sound;
 
 namespace RimWorldRealFoW {
 
 	public static class _Selector {
-		public static DetourHook hookSelect;
-
 		public static void Select(this Selector _this, object obj, bool playSound = true, bool forceDesignatorDeselect = true) {
 			Thing thing = obj as Thing;
 			if (thing != null) {
@@ -28,7 +30,58 @@ namespace RimWorldRealFoW {
 				}
 			}
 
-			hookSelect.callOriginal(_this, new object[] { obj, playSound, forceDesignatorDeselect });
+			if (obj == null) {
+				Log.Error("Cannot select null.");
+				return;
+			}
+
+			if (thing == null && !(obj is Zone)) {
+				Log.Error("Tried to select " + obj + " which is neither a Thing nor a Zone.");
+				return;
+			}
+			if (thing != null && thing.Destroyed) {
+				Log.Error("Cannot select destroyed thing.");
+				return;
+			}
+			Pawn pawn = obj as Pawn;
+			if (pawn != null && pawn.IsWorldPawn()) {
+				Log.Error("Cannot select world pawns.");
+				return;
+			}
+			if (forceDesignatorDeselect) {
+				Find.DesignatorManager.Deselect();
+			}
+			if (_this.SelectedZone != null && !(obj is Zone)) {
+				_this.ClearSelection();
+			}
+			if (obj is Zone && _this.SelectedZone == null) {
+				_this.ClearSelection();
+			}
+			Map map = (thing == null) ? ((Zone)obj).Map : thing.Map;
+			for (int i = Utils.getInstancePrivateValue<List<object>>(_this, "selected").Count - 1; i >= 0; i--) {
+				Thing thing2 = Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i] as Thing;
+				Map map2 = (thing2 == null) ? ((Zone)Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i]).Map : thing2.Map;
+				if (map2 != map) {
+					_this.Deselect(Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i]);
+				}
+			}
+			if (Utils.getInstancePrivateValue<List<object>>(_this, "selected").Count >= 80) {
+				return;
+			}
+			if (!_this.IsSelected(obj)) {
+				if (map != Current.Game.VisibleMap) {
+					Current.Game.VisibleMap = map;
+					SoundDefOf.MapSelected.PlayOneShotOnCamera();
+					IntVec3 intLoc = (thing == null) ? ((Zone)obj).Cells[0] : thing.Position;
+					Find.CameraDriver.JumpTo(intLoc);
+				}
+				if (playSound) {
+					Utils.execInstancePrivate(_this, "PlaySelectionSoundFor", obj);
+				}
+				Utils.getInstancePrivateValue<List<object>>(_this, "selected").Add(obj);
+				SelectionDrawer.Notify_Selected(obj);
+			}
 		}
 	}
 }
+

@@ -57,10 +57,11 @@
     <Compile Include="src\RimWorldRealFoW\MapComponentSeenFog.cs" />
     <Compile Include="src\RimWorldRealFoW\CompHiddenable.cs" />
     <Compile Include="src\RimWorldRealFoW\CompFieldOfView.cs" />
+    <Compile Include="src\RimWorldRealFoW\Utils.cs" />
     <Compile Include="src\RimWorldRealFoW\_MouseoverReadout.cs" />
     <Compile Include="src\RimWorldRealFoW\_Selector.cs" />
     <Compile Include="src\RimWorldRealFoW\_FloodFillerFog.cs" />
-    <Compile Include="src\RimWorldRealFoW\DetourHook.cs" />
+    <Compile Include="src\RimWorldRealFoW\Detours.cs" />
     <Compile Include="src\RimWorldRealFoW\SectionLayer_FoVLayer.cs" />
     <Compile Include="src\RimWorldRealFoW\ShadowCaster.cs" />
     <Compile Include="src\RimWorldRealFoW\RimWorldRealFoW.cs" />
@@ -78,6 +79,7 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="mod-data\Defs\StarterDef.xml" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
