@@ -249,19 +249,20 @@ namespace RimWorldRealFoW {
                      ShadowCaster.ComputeFieldOfViewWithShadowCasting(position.x, position.z, Mathf.RoundToInt(radius) - (position.IsInside(thing) ? 0 : 1),
                         // isOpaque
                         (int x, int y) => {
-									int idx = map.cellIndices.CellToIndex(x, y);
-									if (map.cellIndices.IndexToCell(idx).IsInside(thing)) {
-										return false;
+                           // Out of map position are opaques...
+                           if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
+                              return true;
                            }
-									Building b = map.edificeGrid[idx];
+                           Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
                            return (b != null && !b.CanBeSeenOver());
                         },
                         // setFoV
                         (int x, int y) => {
-									// Ignore inside positions.
+                           if (x >= 0 && y >= 0 && x < map.Size.x && y < map.Size.z) {
                               IntVec3 cell = new IntVec3(x, 0, y);
                               newSeenCells.Add(cell);
                               mapCompSeenFog.incrementSeen(cell);
+                           }
                         });
                   }
                }
