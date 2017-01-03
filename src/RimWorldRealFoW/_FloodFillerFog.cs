@@ -18,7 +18,7 @@ namespace RimWorldRealFoW {
 	class _FloodFillerFog {
 		public static FloodUnfogResult FloodUnfog(IntVec3 root, Map map) {
 			FloodUnfogResult result = default(FloodUnfogResult);
-			if (Current.ProgramState == ProgramState.MapInitializing) {
+			if (Find.TickManager.TicksGame == 0) {
 				ShadowCaster.ComputeFieldOfViewWithShadowCasting(root.x, root.z, Mathf.RoundToInt(CompFieldOfView.MAX_RANGE),
 					// isOpaque
 					(int x, int y) => {
