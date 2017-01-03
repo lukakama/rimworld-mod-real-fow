@@ -55,10 +55,10 @@ namespace RimWorldRealFoW {
 				long Destination_Base = destination.MethodHandle.GetFunctionPointer().ToInt64();
 
 				// Native source address
-				byte* Pointer_Raw_Source = (byte*)Source_Base;
+				byte* Pointer_Raw_Source = (byte*) Source_Base;
 
 				// Pointer to insert jump address into native code
-				long* Pointer_Raw_Address = (long*)(Pointer_Raw_Source + 0x02);
+				long* Pointer_Raw_Address = (long*) (Pointer_Raw_Source + 0x02);
 
 				// Insert 64-bit absolute jump into native code (address in rax)
 				// mov rax, immediate64
@@ -78,10 +78,10 @@ namespace RimWorldRealFoW {
 				int Destination_Base = destination.MethodHandle.GetFunctionPointer().ToInt32();
 
 				// Native source address
-				byte* Pointer_Raw_Source = (byte*)Source_Base;
+				byte* Pointer_Raw_Source = (byte*) Source_Base;
 
 				// Pointer to insert jump address into native code
-				int* Pointer_Raw_Address = (int*)(Pointer_Raw_Source + 1);
+				int* Pointer_Raw_Address = (int*) (Pointer_Raw_Source + 1);
 
 				// Jump offset (less instruction size)
 				int offset = (Destination_Base - Source_Base) - 5;

@@ -19,268 +19,305 @@ using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW {
-   class CompFieldOfView : ThingComp {
-      public static readonly float MAX_RANGE = 32f;
+	class CompFieldOfView : ThingComp {
+		public static readonly float MAX_RANGE = 32f;
 
-      private bool calculated;
-      private IntVec3 lastPosition;
-      private float lastSightRange;
-      private bool lastIsPeeking;
+		private bool calculated;
+		private IntVec3 lastPosition;
+		private float lastSightRange;
+		private bool lastIsPeeking;
 
-      private List<IntVec3> seenCells;
-      private List<IntVec3> newSeenCells;
+		private bool[] viewMap;
+		private CellRect viewRect;
+		private bool[] newViewMap;
+		private CellRect newViewRect;
 
-      private Map map;
-      private MapComponentSeenFog mapCompSeenFog;
+		private Map map;
+		private MapComponentSeenFog mapCompSeenFog;
 
-      private CompHiddenable compHiddenable;
-      private CompGlower compGlower;
-      private CompPowerTrader compPowerTrader;
-      private CompRefuelable compRefuelable;
-      private CompFlickable compFlickable;
-      private CompMannable mannableComp;
+		private CompHiddenable compHiddenable;
+		private CompGlower compGlower;
+		private CompPowerTrader compPowerTrader;
+		private CompRefuelable compRefuelable;
+		private CompFlickable compFlickable;
+		private CompMannable mannableComp;
 
-      private Pawn pawn;
-      private Building_TurretGun turret;
+		private bool setupDown = false;
 
-      public override void PostSpawnSetup() {
-         base.PostSpawnSetup();
+		private Pawn pawn;
+		private Building_TurretGun turret;
 
-         calculated = false;
-         lastPosition = IntVec3.Invalid;
-         lastSightRange = 0f;
-         lastIsPeeking = false;
+		public override void PostSpawnSetup() {
+			base.PostSpawnSetup();
 
-         seenCells = new List<IntVec3>(512);
-         newSeenCells = new List<IntVec3>(512);
+			setupDown = true;
 
-         compHiddenable = parent.GetComp<CompHiddenable>();
-         compGlower = parent.GetComp<CompGlower>();
-         compPowerTrader = parent.GetComp<CompPowerTrader>();
-         compRefuelable = parent.GetComp<CompRefuelable>();
-         compFlickable = parent.GetComp<CompFlickable>();
-         mannableComp = parent.GetComp<CompMannable>();
+			calculated = false;
+			lastPosition = IntVec3.Invalid;
+			lastSightRange = 0f;
+			lastIsPeeking = false;
 
-         pawn = parent as Pawn;
-         turret = parent as Building_TurretGun;
+			viewMap = new bool[1 + ((int) MAX_RANGE * 2)];
+			viewRect = new CellRect();
 
-         updateFoV();
-      }
+			newViewMap = new bool[1 + ((int) MAX_RANGE * 2)];
+			newViewRect = new CellRect();
 
-      public override void ReceiveCompSignal(string signal) {
-         base.ReceiveCompSignal(signal);
 
-         updateFoV();
-      }
+			compHiddenable = parent.GetComp<CompHiddenable>();
+			compGlower = parent.GetComp<CompGlower>();
+			compPowerTrader = parent.GetComp<CompPowerTrader>();
+			compRefuelable = parent.GetComp<CompRefuelable>();
+			compFlickable = parent.GetComp<CompFlickable>();
+			mannableComp = parent.GetComp<CompMannable>();
 
-      public override void CompTick() {
-         base.CompTick();
+			pawn = parent as Pawn;
+			turret = parent as Building_TurretGun;
 
-         // Check every 25 thick.
-         if (Find.TickManager.TicksGame % 25 == 0) {
-            updateFoV();
-         }
-      }
+			updateFoV();
+		}
 
-      public void updateFoV() {
-         if (Current.ProgramState == ProgramState.MapInitializing) {
-            return;
-         }
+		public override void ReceiveCompSignal(string signal) {
+			base.ReceiveCompSignal(signal);
 
-         Thing thing = base.parent;
+			updateFoV();
+		}
 
-         if (thing != null && thing.Spawned && thing.Map != null && thing.Position != IntVec3.Invalid) {
-            if (map != thing.Map) {
-               if (map != null) {
-                  unseeSeenCells();
-               }
-               map = thing.Map;
-               mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
-            }
+		public override void CompTick() {
+			base.CompTick();
 
-            if (mapCompSeenFog == null) {
-               mapCompSeenFog = new MapComponentSeenFog(thing.Map);
-               thing.Map.components.Add(mapCompSeenFog);
-               mapCompSeenFog.refogAll();
-            }
+			// Check every 25 thick.
+			if (Find.TickManager.TicksGame % 25 == 0) {
+				updateFoV();
+			}
+		}
 
-            if (thing.Faction != null && thing.Faction.IsPlayer && (pawn == null || !pawn.Dead)) {
-               // Player things or alive pawn!
+		public void updateFoV() {
+			if (!setupDown || Current.ProgramState == ProgramState.MapInitializing) {
+				return;
+			}
 
-               if (pawn != null) {
-                  // Alive Pawns!
+			Thing thing = base.parent;
 
-                  float sightRange;
-                  if (pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
-                     // Sleeping: sight reduced to 20%.
-                     sightRange = Mathf.Max(MAX_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight) * 0.2f, 1f);
-                  } else {
-                     sightRange = Mathf.Max(MAX_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight), 1f);
-                  }
-                  bool isPeeking = false;
-                  if (pawn.CurJob != null && (pawn.CurJob.def == JobDefOf.AttackStatic || pawn.CurJob.def == JobDefOf.AttackMelee ||
-                          pawn.CurJob.def == JobDefOf.Wait || pawn.CurJob.def == JobDefOf.WaitCombat)) {
-                     isPeeking = true;
-                  }
-                  if (!calculated || pawn.Position != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
-                     calculated = true;
-                     lastPosition = pawn.Position;
-                     lastSightRange = sightRange;
-                     lastIsPeeking = isPeeking;
+			if (thing != null && thing.Spawned && thing.Map != null && thing.Position != IntVec3.Invalid) {
+				if (map != thing.Map) {
+					if (map != null) {
+						unseeSeenCells();
+					}
+					map = thing.Map;
+					mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+				}
 
-                     calculateFoV(thing, sightRange, isPeeking);
-                  }
+				if (mapCompSeenFog == null) {
+					mapCompSeenFog = new MapComponentSeenFog(thing.Map);
+					thing.Map.components.Add(mapCompSeenFog);
+					mapCompSeenFog.refogAll();
+				}
 
-               } else if (compGlower != null) {
-                  // Glowers!
+				if (thing.Faction != null && thing.Faction.IsPlayer && (pawn == null || !pawn.Dead)) {
+					// Player things or alive pawn!
 
-                  float sightRange = compGlower.Props.glowRadius;
+					if (pawn != null) {
+						// Alive Pawns!
 
-                  if ((compPowerTrader != null && !compPowerTrader.PowerOn) ||
-                          (compRefuelable != null && !compRefuelable.HasFuel) ||
-                          (compFlickable != null && !compFlickable.SwitchIsOn)) {
-                     sightRange = 0f;
-                  }
+						float sightRange;
+						if (pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
+							// Sleeping: sight reduced to 20%.
+							sightRange = Mathf.Max(MAX_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight) * 0.2f, 1f);
+						} else {
+							sightRange = Mathf.Max(MAX_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight), 1f);
+						}
+						bool isPeeking = false;
+						if (pawn.CurJob != null && (pawn.CurJob.def == JobDefOf.AttackStatic || pawn.CurJob.def == JobDefOf.AttackMelee ||
+								  pawn.CurJob.def == JobDefOf.Wait || pawn.CurJob.def == JobDefOf.WaitCombat)) {
+							isPeeking = true;
+						}
+						if (!calculated || pawn.Position != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
+							calculated = true;
+							lastPosition = pawn.Position;
+							lastSightRange = sightRange;
+							lastIsPeeking = isPeeking;
 
-                  if (!calculated || thing.Position != lastPosition || sightRange != lastSightRange) {
-                     calculated = true;
-                     lastPosition = thing.Position;
-                     lastSightRange = sightRange;
+							calculateFoV(thing, sightRange, isPeeking);
+						}
 
-                     calculateFoV(thing, sightRange, false);
-                  }
+					} else if (compGlower != null) {
+						// Glowers!
 
-               } else if (turret != null && mannableComp == null) {
-                  // Automatic turrets!
+						float sightRange = compGlower.Props.glowRadius;
 
-                  float sightRange = turret.GunCompEq.PrimaryVerb.verbProps.range;
+						if ((compPowerTrader != null && !compPowerTrader.PowerOn) ||
+								  (compRefuelable != null && !compRefuelable.HasFuel) ||
+								  (compFlickable != null && !compFlickable.SwitchIsOn)) {
+							sightRange = 0f;
+						}
 
-                  if ((compPowerTrader != null && !compPowerTrader.PowerOn) ||
-                          (compRefuelable != null && !compRefuelable.HasFuel) ||
-                          (compFlickable != null && !compFlickable.SwitchIsOn)) {
-                     sightRange = 0f;
-                  }
+						if (!calculated || thing.Position != lastPosition || sightRange != lastSightRange) {
+							calculated = true;
+							lastPosition = thing.Position;
+							lastSightRange = sightRange;
 
-                  if (!calculated || thing.Position != lastPosition || sightRange != lastSightRange) {
-                     calculated = true;
-                     lastPosition = thing.Position;
-                     lastSightRange = sightRange;
+							calculateFoV(thing, sightRange, false);
+						}
 
-                     calculateFoV(thing, sightRange, false);
-                  }
+					} else if (turret != null && mannableComp == null) {
+						// Automatic turrets!
 
-               } else {
-                  // Others!
+						float sightRange = turret.GunCompEq.PrimaryVerb.verbProps.range;
 
-                  if (!calculated || thing.Position != lastPosition) {
-                     calculated = true;
-                     lastPosition = thing.Position;
+						if ((compPowerTrader != null && !compPowerTrader.PowerOn) ||
+								  (compRefuelable != null && !compRefuelable.HasFuel) ||
+								  (compFlickable != null && !compFlickable.SwitchIsOn)) {
+							sightRange = 0f;
+						}
 
-                     calculateFoV(thing, 0f, false);
-                  }
-               }
+						if (!calculated || thing.Position != lastPosition || sightRange != lastSightRange) {
+							calculated = true;
+							lastPosition = thing.Position;
+							lastSightRange = sightRange;
 
-            } else {
+							calculateFoV(thing, sightRange, false);
+						}
 
-               // Non player thing! (this should be moved to another Component...)
-               if (!calculated || thing.Position != lastPosition) {
-                  calculated = true;
-                  lastPosition = thing.Position;
+					} else {
+						// Others!
 
-                  if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
-                     if (mapCompSeenFog.shownCells[map.cellIndices.CellToIndex(thing.Position)] == 0) {
-                        compHiddenable.hide();
-                     } else {
-                        compHiddenable.show();
-                     }
-                  }
-               }
-            }
-         }
-      }
+						if (!calculated || thing.Position != lastPosition) {
+							calculated = true;
+							lastPosition = thing.Position;
 
-      public override void PostDeSpawn(Map map) {
-         base.PostDeSpawn(map);
+							calculateFoV(thing, 0f, false);
+						}
+					}
 
-         unseeSeenCells();
-      }
+				} else {
 
-      public bool hasMechanoidInSeenCell(Map map) {
-         foreach (IntVec3 c in seenCells) {
-            List<Thing> thingList = c.GetThingList(map);
-            for (int l = 0; l < thingList.Count; l++) {
-               Pawn cPawn = thingList[l] as Pawn;
-               if (cPawn != null) {
-                  cPawn.mindState.Active = true;
-                  if (cPawn.def.race.IsMechanoid) {
-                     return true;
-                  }
-               }
-            }
-         }
+					// Non player thing! (this should be moved to another Component...)
+					if (!calculated || thing.Position != lastPosition) {
+						calculated = true;
+						lastPosition = thing.Position;
 
-         return false;
-      }
+						if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
+							if (mapCompSeenFog.shownCells[map.cellIndices.CellToIndex(thing.Position)] == 0) {
+								compHiddenable.hide();
+							} else {
+								compHiddenable.show();
+							}
+						}
+					}
+				}
+			}
+		}
 
-      public void calculateFoV(Thing thing, float radius, bool peek) {
-         /*if (!(thing is Pawn)) {
+		public override void PostDeSpawn(Map map) {
+			base.PostDeSpawn(map);
+
+			unseeSeenCells();
+		}
+
+		public void calculateFoV(Thing thing, float radius, bool peek) {
+			/*if (!(thing is Pawn)) {
 				Log.Message("calculateFoV: " + thing.ThingID);
 			}*/
 
-         newSeenCells.Clear();
+			int intRadius = Mathf.RoundToInt(radius);
 
-         foreach (IntVec3 occupiedCell in thing.OccupiedRect().Cells) {
-            if (occupiedCell.InBounds(map)) {
-               newSeenCells.Add(occupiedCell);
-               mapCompSeenFog.incrementSeen(occupiedCell);
-            }
-         }
+			IntVec3 position = thing.Position;
 
-         if (radius > 0) {
-            IEnumerable<IntVec3> positions = new IntVec3[] { thing.Position };
+			// Calculate new view rect.
+			CellRect occupedRect = thing.OccupiedRect();
+			newViewRect.maxX = Mathf.Max(position.x + intRadius, occupedRect.maxX);
+			newViewRect.minX = Mathf.Min(position.x - intRadius, occupedRect.minX);
+			newViewRect.maxZ = Mathf.Max(position.z + intRadius, occupedRect.maxZ);
+			newViewRect.minZ = Mathf.Min(position.z - intRadius, occupedRect.minZ);
 
-            if (peek) {
-               positions = positions.Concat(GenAdj.CellsAdjacentCardinal(thing));
-            }
+			int newViewWidth = newViewRect.Width;
+			int newViewArea = newViewRect.Area;
 
-            foreach (IntVec3 position in positions) {
-               if (position.IsInside(thing) || position.CanBeSeenOverFast(map)) {
-                  if (radius != 0) {
-                     ShadowCaster.ComputeFieldOfViewWithShadowCasting(position.x, position.z, Mathf.RoundToInt(radius) - (position.IsInside(thing) ? 0 : 1),
-                        // isOpaque
-                        (int x, int y) => {
-                           // Out of map position are opaques...
-                           if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
-                              return true;
-                           }
-                           Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
-                           return (b != null && !b.CanBeSeenOver());
-                        },
-                        // setFoV
-                        (int x, int y) => {
-                           if (x >= 0 && y >= 0 && x < map.Size.x && y < map.Size.z) {
-                              IntVec3 cell = new IntVec3(x, 0, y);
-                              newSeenCells.Add(cell);
-                              mapCompSeenFog.incrementSeen(cell);
-                           }
-                        });
-                  }
-               }
-            }
-         }
+			// Clear or reset the new view map.
+			if (newViewMap.Length < newViewArea) {
+				newViewMap = new bool[newViewArea];
+			} else {
+				for (int i = 0; i < newViewArea; i++) {
+					newViewMap[i] = false;
+				}
+			}
 
-         unseeSeenCells();
 
-         seenCells.AddRange(newSeenCells);
+			// Occupied cells ar always visible.
+			foreach (IntVec3 occupiedCell in occupedRect.Cells) {
+				if (occupiedCell.InBounds(map)) {
+					newViewMap[CellIndicesUtility.CellToIndex(occupiedCell.x - newViewRect.minX, occupiedCell.z - newViewRect.minZ, newViewWidth)] = true;
+					mapCompSeenFog.incrementSeen(occupiedCell);
+				}
+			}
 
-         newSeenCells.Clear();
-      }
+			// Calculate Field of View (if necessary).
+			if (intRadius > 0) {
+				IEnumerable<IntVec3> viewPositions = new IntVec3[] { thing.Position };
 
-      private void unseeSeenCells() {
-         foreach (IntVec3 cell in seenCells) {
-            mapCompSeenFog.decrementSeen(cell);
-         }
-         seenCells.Clear();
-      }
-   }
+				if (peek) {
+					viewPositions = viewPositions.Concat(GenAdj.CellsAdjacentCardinal(thing));
+				}
+
+				foreach (IntVec3 viewPosition in viewPositions) {
+					if (viewPosition.IsInside(thing) || viewPosition.CanBeSeenOverFast(map)) {
+						if (intRadius != 0) {
+							ShadowCaster.ComputeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius - (viewPosition.IsInside(thing) ? 0 : 1),
+								// isOpaque
+								(int x, int y) => {
+									// Out of map positions are opaques...
+									if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
+										return true;
+									}
+									Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
+									return (b != null && !b.CanBeSeenOver());
+								},
+								// setFoV
+								(int x, int y) => {
+									if (x >= 0 && y >= 0 && x < map.Size.x && y < map.Size.z) {
+										int idx = CellIndicesUtility.CellToIndex(x - newViewRect.minX, y - newViewRect.minZ, newViewWidth);
+										if (!newViewMap[idx]) {
+											newViewMap[idx] = true;
+											mapCompSeenFog.incrementSeen(new IntVec3(x, 0, y));
+										}
+									}
+								});
+						}
+					}
+				}
+			}
+
+			unseeSeenCells();
+
+			// Copy the new view area.
+			if (viewMap.Length < newViewArea) {
+				viewMap = new bool[newViewArea];
+			}
+			Array.Copy(newViewMap, viewMap, newViewArea);
+
+			// Copy the new view rect.
+			viewRect.maxX = newViewRect.maxX;
+			viewRect.minX = newViewRect.minX;
+			viewRect.maxZ = newViewRect.maxZ;
+			viewRect.minZ = newViewRect.minZ;
+		}
+
+		private void unseeSeenCells() {
+			int viewWidth = viewRect.Width;
+			int viewHeight = viewRect.Height;
+			int viewArea = viewRect.Area;
+			for (int i = 0; i < viewArea; i++) {
+				if (viewMap[i]) {
+					IntVec3 c = CellIndicesUtility.IndexToCell(i, viewWidth, viewHeight);
+					c.x += viewRect.minX;
+					c.z += viewRect.minZ;
+
+					mapCompSeenFog.decrementSeen(c);
+
+					viewMap[i] = false;
+				}
+			}
+		}
+	}
 }

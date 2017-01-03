@@ -7,7 +7,7 @@
     <ProjectGuid>{9E008B68-2B98-4AC2-9C65-832D13F94746}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RimworldFoW</RootNamespace>
+    <RootNamespace>RimWorldRealFoW</RootNamespace>
     <AssemblyName>RimWorldFoWMod</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -58,14 +58,17 @@
     <Compile Include="src\RimWorldRealFoW\CompHiddenable.cs" />
     <Compile Include="src\RimWorldRealFoW\CompFieldOfView.cs" />
     <Compile Include="src\RimWorldRealFoW\Utils.cs" />
+    <Compile Include="src\RimWorldRealFoW\MoteBubbleExt.cs" />
+    <Compile Include="src\RimWorldRealFoW\_GenConstruct.cs" />
     <Compile Include="src\RimWorldRealFoW\_MouseoverReadout.cs" />
+    <Compile Include="src\RimWorldRealFoW\_PawnUIOverlay.cs" />
     <Compile Include="src\RimWorldRealFoW\_Selector.cs" />
-    <Compile Include="src\RimWorldRealFoW\_FloodFillerFog.cs" />
     <Compile Include="src\RimWorldRealFoW\Detours.cs" />
     <Compile Include="src\RimWorldRealFoW\SectionLayer_FoVLayer.cs" />
     <Compile Include="src\RimWorldRealFoW\ShadowCaster.cs" />
     <Compile Include="src\RimWorldRealFoW\RimWorldRealFoW.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\RimWorldRealFoW\_Verb.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="rimworld-mod-real-fow.licenseheader" />

@@ -23,7 +23,6 @@ namespace RimWorldRealFoW {
 		public void hide() {
 			if (!hidden) {
 				hidden = true;
-
 				if (parent.def.drawerType != DrawerType.MapMeshOnly) {
 					parent.Map.dynamicDrawManager.DeRegisterDrawable(parent);
 				}
@@ -42,7 +41,6 @@ namespace RimWorldRealFoW {
 		public void show() {
 			if (hidden) {
 				hidden = false;
-
 				if (parent.def.drawerType != DrawerType.MapMeshOnly) {
 					parent.Map.dynamicDrawManager.RegisterDrawable(parent);
 				}
@@ -50,7 +48,6 @@ namespace RimWorldRealFoW {
 					parent.Map.tooltipGiverList.RegisterTooltipGiver(parent);
 				}
 				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Things);
-
 			}
 		}
 	}

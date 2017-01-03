@@ -13,7 +13,6 @@
 //   limitations under the License.
 using RimWorld;
 using RimWorld.Planet;
-using RimworldFoW.src.RimWorldRealFoW;
 using System.Collections.Generic;
 using Verse;
 using Verse.Sound;
@@ -22,19 +21,12 @@ namespace RimWorldRealFoW {
 
 	public static class _Selector {
 		public static void Select(this Selector _this, object obj, bool playSound = true, bool forceDesignatorDeselect = true) {
-			Thing thing = obj as Thing;
-			if (thing != null) {
-				CompHiddenable comp = thing.TryGetComp<CompHiddenable>();
-				if (comp != null && comp.hidden) {
-					return;
-				}
-			}
-
 			if (obj == null) {
 				Log.Error("Cannot select null.");
 				return;
 			}
 
+			Thing thing = obj as Thing;
 			if (thing == null && !(obj is Zone)) {
 				Log.Error("Tried to select " + obj + " which is neither a Thing nor a Zone.");
 				return;
@@ -48,6 +40,22 @@ namespace RimWorldRealFoW {
 				Log.Error("Cannot select world pawns.");
 				return;
 			}
+
+
+			Map map = (thing == null) ? ((Zone) obj).Map : thing.Map;
+			if (thing != null) {
+				MapComponentSeenFog seenFog = Find.VisibleMap.GetComponent<MapComponentSeenFog>();
+				if (seenFog.shownCells[Find.VisibleMap.cellIndices.CellToIndex(thing.Position)] == 0u) {
+					return;
+				}
+
+				CompHiddenable comp = thing.TryGetComp<CompHiddenable>();
+				if (comp != null && comp.hidden) {
+					return;
+				}
+			}
+
+
 			if (forceDesignatorDeselect) {
 				Find.DesignatorManager.Deselect();
 			}
@@ -57,10 +65,9 @@ namespace RimWorldRealFoW {
 			if (obj is Zone && _this.SelectedZone == null) {
 				_this.ClearSelection();
 			}
-			Map map = (thing == null) ? ((Zone)obj).Map : thing.Map;
 			for (int i = Utils.getInstancePrivateValue<List<object>>(_this, "selected").Count - 1; i >= 0; i--) {
 				Thing thing2 = Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i] as Thing;
-				Map map2 = (thing2 == null) ? ((Zone)Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i]).Map : thing2.Map;
+				Map map2 = (thing2 == null) ? ((Zone) Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i]).Map : thing2.Map;
 				if (map2 != map) {
 					_this.Deselect(Utils.getInstancePrivateValue<List<object>>(_this, "selected")[i]);
 				}
@@ -72,7 +79,7 @@ namespace RimWorldRealFoW {
 				if (map != Current.Game.VisibleMap) {
 					Current.Game.VisibleMap = map;
 					SoundDefOf.MapSelected.PlayOneShotOnCamera();
-					IntVec3 intLoc = (thing == null) ? ((Zone)obj).Cells[0] : thing.Position;
+					IntVec3 intLoc = (thing == null) ? ((Zone) obj).Cells[0] : thing.Position;
 					Find.CameraDriver.JumpTo(intLoc);
 				}
 				if (playSound) {

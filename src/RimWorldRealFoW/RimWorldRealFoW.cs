@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorld;
+using System;
 using System.Reflection;
 using Verse;
 
@@ -32,48 +33,43 @@ namespace RimWorldRealFoW {
 			CompProperties comPropsThingHiddeable = new CompProperties(typeof(CompHiddenable));
 
 			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs) {
+				if (typeof(MoteBubble) == def.thingClass) {
+					def.thingClass = typeof(MoteBubbleExt);
+				}
+
 				def.comps.Add(comPropsPawnFoV);
 				def.comps.Add(comPropsThingHiddeable);
+
 			}
 		}
 
 		public static void injectDetours() {
-			detourFloodFillerFog();
-			detourSelector();
-			detourMouseoverReadout();
+			detour(typeof(Selector), typeof(_Selector), "Select");
+			detour(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
+			detour(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
+			detour(typeof(PawnUIOverlay), typeof(_PawnUIOverlay), "DrawPawnGUIOverlay");
+			detour(typeof(GenConstruct), typeof(_GenConstruct), "CanPlaceBlueprintAt");
 		}
 
-		public static void detourFloodFillerFog() {
-			MethodInfo method = typeof(FloodFillerFog).GetMethod("FloodUnfog", BindingFlags.Static | BindingFlags.Public);
+		public static void detour(Type sourceType, Type targetType, string methodName) {
+			MethodInfo method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll);
 			if (method != null) {
-				MethodInfo newMethod = typeof(_FloodFillerFog).GetMethod("FloodUnfog", BindingFlags.Static | BindingFlags.Public);
+				MethodInfo newMethod = targetType.GetMethod(methodName, GenGeneric.BindingFlagsAll);
 				if (newMethod != null) {
 					if (Detours.TryDetourFromTo(method, newMethod)) {
-						Log.Message("Detoured FloodFillerFog.FloodUnfog");
+						Log.Message("Detoured method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
 					}
 				}
 			}
 		}
 
-		public static void detourSelector() {
-			MethodInfo method = typeof(Selector).GetMethod("Select", BindingFlags.Instance | BindingFlags.Public);
+		public static void detour(Type sourceType, Type targetType, string methodName, params Type[] types) {
+			MethodInfo method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
 			if (method != null) {
-				MethodInfo newMethod = typeof(_Selector).GetMethod("Select", BindingFlags.Static | BindingFlags.Public);
+				MethodInfo newMethod = targetType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
 				if (newMethod != null) {
 					if (Detours.TryDetourFromTo(method, newMethod)) {
-						Log.Message("Detoured Selector.Select");
-					}
-				}
-			}
-		}
-
-		public static void detourMouseoverReadout() {
-			MethodInfo method = typeof(MouseoverReadout).GetMethod("MouseoverReadoutOnGUI", BindingFlags.Instance | BindingFlags.Public);
-			if (method != null) {
-				MethodInfo newMethod = typeof(_MouseoverReadout).GetMethod("MouseoverReadoutOnGUI", BindingFlags.Static | BindingFlags.Public);
-				if (newMethod != null) {
-					if (Detours.TryDetourFromTo(method, newMethod)) {
-						Log.Message("Detoured MouseoverReadout.MouseoverReadoutOnGUI");
+						Log.Message("Detoured method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
 					}
 				}
 			}
