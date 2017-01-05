@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -35,8 +36,10 @@ namespace RimWorldRealFoW {
 			}
 			float num = 0f;
 			Rect rect;
+			// >>>> Patch start
 			MapComponentSeenFog seenFog = Find.VisibleMap.GetComponent<MapComponentSeenFog>();
-			if (c.Fogged(Find.VisibleMap) || !seenFog.revealedCells[Find.VisibleMap.cellIndices.CellToIndex(c)]) {
+			if (c.Fogged(Find.VisibleMap) || (seenFog != null && !seenFog.revealedCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
+			// <<<< Patch end
 				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
 				Widgets.Label(rect, "Undiscovered".Translate());
 				GUI.color = Color.white;
@@ -79,6 +82,7 @@ namespace RimWorldRealFoW {
 			List<Thing> thingList = c.GetThingList(Find.VisibleMap);
 			for (int i = 0; i < thingList.Count; i++) {
 				Thing thing = thingList[i];
+				// >>>> Patch start
 				CompHiddenable comp = thing.TryGetComp<CompHiddenable>();
 				if ((comp == null || !comp.hidden) && thing.def.category != ThingCategory.Mote) {
 					rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
@@ -86,6 +90,7 @@ namespace RimWorldRealFoW {
 					Widgets.Label(rect, labelMouseover);
 					num += 19f;
 				}
+				// <<<< Patch end
 			}
 			RoofDef roof = c.GetRoof(Find.VisibleMap);
 			if (roof != null) {
