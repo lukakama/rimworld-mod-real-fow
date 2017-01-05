@@ -5,38 +5,47 @@ using System;
 using System.Collections.Generic;
 
 namespace RimWorldRealFoW {
-	public static class ShadowCaster {
+	public class ShadowCaster {
 		// Takes a circle in the form of a center point and radius, and a function that
 		// can tell whether a given cell is opaque. Calls the setFoV action on
 		// every cell that is both within the radius and visible from the center. 
 
-		public static void ComputeFieldOfViewWithShadowCasting(
+		private Queue<ColumnPortion> queue = new Queue<ColumnPortion>(50);
+
+		public void computeFieldOfViewWithShadowCasting(
 			 int x, int y, int radius,
 			 Func<int, int, bool> isOpaque,
-			 Action<int, int> setFoV) {
-			Func<int, int, bool> opaque = TranslateOrigin(isOpaque, x, y);
-			Action<int, int> fov = TranslateOrigin(setFoV, x, y);
+			 Action<int, int> setFoV,
+			 int specificOctant = -1) {
+			Func<int, int, bool> opaque = translateOrigin(isOpaque, x, y);
+			Action<int, int> fov = translateOrigin(setFoV, x, y);
 
-			for (int octant = 0; octant < 8; ++octant) {
-				ComputeFieldOfViewInOctantZero(
-					 TranslateOctant(opaque, octant),
-					 TranslateOctant(fov, octant),
-					 radius);
+			if (specificOctant == -1) {
+				for (int octant = 0; octant < 8; ++octant) {
+					computeFieldOfViewInOctantZero(
+						 translateOctant(opaque, octant),
+						 translateOctant(fov, octant),
+						 radius);
+				}
+			} else {
+				computeFieldOfViewInOctantZero(
+						 translateOctant(opaque, specificOctant),
+						 translateOctant(fov, specificOctant),
+						 radius);
 			}
 		}
 
-		private static void ComputeFieldOfViewInOctantZero(
+		private void computeFieldOfViewInOctantZero(
 			 Func<int, int, bool> isOpaque,
 			 Action<int, int> setFieldOfView,
 			 int radius) {
-			var queue = new Queue<ColumnPortion>();
 			queue.Enqueue(new ColumnPortion(0, new DirectionVector(1, 0), new DirectionVector(1, 1)));
 			while (queue.Count != 0) {
 				var current = queue.Dequeue();
 				if (current.X > radius)
 					continue;
 
-				ComputeFoVForColumnPortion(
+				computeFoVForColumnPortion(
 					 current.X,
 					 current.TopVector,
 					 current.BottomVector,
@@ -51,7 +60,7 @@ namespace RimWorldRealFoW {
 		// portion that are within the radius as in the field of view, and 
 		// (2) it computes which portions of the following column are in the 
 		// field of view, and puts them on a work queue for later processing. 
-		private static void ComputeFoVForColumnPortion(
+		private void computeFoVForColumnPortion(
 			 int x,
 			 DirectionVector topVector,
 			 DirectionVector bottomVector,
@@ -66,16 +75,17 @@ namespace RimWorldRealFoW {
 			// Start at the top of the column portion and work down.
 
 			int topY;
-			if (x == 0)
+			if (x == 0) {
 				topY = 0;
-			else {
+			} else {
 				int quotient = (2 * x + 1) * topVector.Y / (2 * topVector.X);
 				int remainder = (2 * x + 1) * topVector.Y % (2 * topVector.X);
 
-				if (remainder > topVector.X)
+				if (remainder > topVector.X) {
 					topY = quotient + 1;
-				else
+				} else {
 					topY = quotient;
+				}
 			}
 
 			// Note that this can find a top cell that is actually entirely blocked by
@@ -83,16 +93,17 @@ namespace RimWorldRealFoW {
 
 
 			int bottomY;
-			if (x == 0)
+			if (x == 0) {
 				bottomY = 0;
-			else {
+			} else {
 				int quotient = (2 * x - 1) * bottomVector.Y / (2 * bottomVector.X);
 				int remainder = (2 * x - 1) * bottomVector.Y % (2 * bottomVector.X);
 
-				if (remainder >= bottomVector.X)
+				if (remainder >= bottomVector.X) {
 					bottomY = quotient + 1;
-				else
+				} else {
 					bottomY = quotient;
+				}
 			}
 
 			// A more sophisticated algorithm would say that a cell is visible if there is 
@@ -101,9 +112,10 @@ namespace RimWorldRealFoW {
 			// along the way. This is the "Permissive Field Of View" algorithm, and it
 			// is much harder to implement.
 
-			bool? wasLastCellOpaque = null;
+			bool wasLastCellOpaque = false;
+			bool lastCellCalcuated = false;
 			for (int y = topY; y >= bottomY; --y) {
-				bool inRadius = IsInRadius(x, y, radius);
+				bool inRadius = isInRadius(x, y, radius);
 				if (inRadius) {
 					// The current cell is in the field of view.
 					setFieldOfView(x, y);
@@ -116,11 +128,11 @@ namespace RimWorldRealFoW {
 				// far away in the next column.
 
 				bool currentIsOpaque = !inRadius || isOpaque(x, y);
-				if (wasLastCellOpaque != null) {
+				if (lastCellCalcuated) {
 					if (currentIsOpaque) {
 						// We've found a boundary from transparent to opaque. Make a note
 						// of it and revisit it later.
-						if (!wasLastCellOpaque.Value) {
+						if (!wasLastCellOpaque) {
 							// The new bottom vector touches the upper left corner of 
 							// opaque cell that is below the transparent cell. 
 							queue.Enqueue(new ColumnPortion(
@@ -128,7 +140,7 @@ namespace RimWorldRealFoW {
 								 new DirectionVector(x * 2 - 1, y * 2 + 1),
 								 topVector));
 						}
-					} else if (wasLastCellOpaque.Value) {
+					} else if (wasLastCellOpaque) {
 						// We've found a boundary from opaque to transparent. Adjust the
 						// top vector so that when we find the next boundary or do
 						// the bottom cell, we have the right top vector.
@@ -139,13 +151,67 @@ namespace RimWorldRealFoW {
 						topVector = new DirectionVector(x * 2 + 1, y * 2 + 1);
 					}
 				}
+				lastCellCalcuated = true;
 				wasLastCellOpaque = currentIsOpaque;
 			}
 
 			// Make a note of the lowest opaque-->transparent transition, if there is one. 
-			if (wasLastCellOpaque != null && !wasLastCellOpaque.Value)
+			if (lastCellCalcuated && !wasLastCellOpaque)
 				queue.Enqueue(new ColumnPortion(x + 1, bottomVector, topVector));
 		}
+
+		// Is the lower-left corner of cell (x,y) within the radius?
+		private bool isInRadius(int x, int y, int length) {
+			return (2 * x - 1) * (2 * x - 1) + (2 * y - 1) * (2 * y - 1) <= 4 * length * length;
+		}
+
+		
+
+		// Octant helpers
+		//
+		//
+		//                 \2|1/
+		//                 3\|/0
+		//               ----+----
+		//                 4/|\7
+		//                 /5|6\
+		//
+		// 
+
+		private static Func<int, int, T> translateOrigin<T>(Func<int, int, T> f, int x, int y) {
+			return (a, b) => f(a + x, b + y);
+		}
+
+		private Action<int, int> translateOrigin(Action<int, int> f, int x, int y) {
+			return (a, b) => f(a + x, b + y);
+		}
+
+		private Func<int, int, T> translateOctant<T>(Func<int, int, T> f, int octant) {
+			switch (octant) {
+				default: return f;
+				case 1: return (x, y) => f(y, x);
+				case 2: return (x, y) => f(-y, x);
+				case 3: return (x, y) => f(-x, y);
+				case 4: return (x, y) => f(-x, -y);
+				case 5: return (x, y) => f(-y, -x);
+				case 6: return (x, y) => f(y, -x);
+				case 7: return (x, y) => f(x, -y);
+			}
+		}
+
+		private Action<int, int> translateOctant(Action<int, int> f, int octant) {
+			switch (octant) {
+				default: return f;
+				case 1: return (x, y) => f(y, x);
+				case 2: return (x, y) => f(-y, x);
+				case 3: return (x, y) => f(-x, y);
+				case 4: return (x, y) => f(-x, -y);
+				case 5: return (x, y) => f(-y, -x);
+				case 6: return (x, y) => f(y, -x);
+				case 7: return (x, y) => f(x, -y);
+			}
+		}
+		
 
 		private struct ColumnPortion {
 			public int X { get; private set; }
@@ -159,12 +225,6 @@ namespace RimWorldRealFoW {
 				this.TopVector = top;
 			}
 		}
-
-		// Is the lower-left corner of cell (x,y) within the radius?
-		private static bool IsInRadius(int x, int y, int length) {
-			return (2 * x - 1) * (2 * x - 1) + (2 * y - 1) * (2 * y - 1) <= 4 * length * length;
-		}
-
 		private struct DirectionVector {
 			public int X { get; private set; }
 			public int Y { get; private set; }
@@ -175,51 +235,5 @@ namespace RimWorldRealFoW {
 				this.Y = y;
 			}
 		}
-
-		// Octant helpers
-		//
-		//
-		//                 \2|1/
-		//                 3\|/0
-		//               ----+----
-		//                 4/|\7
-		//                 /5|6\
-		//
-		// 
-
-		private static Func<int, int, T> TranslateOrigin<T>(Func<int, int, T> f, int x, int y) {
-			return (a, b) => f(a + x, b + y);
-		}
-
-		private static Action<int, int> TranslateOrigin(Action<int, int> f, int x, int y) {
-			return (a, b) => f(a + x, b + y);
-		}
-
-		private static Func<int, int, T> TranslateOctant<T>(Func<int, int, T> f, int octant) {
-			switch (octant) {
-				default: return f;
-				case 1: return (x, y) => f(y, x);
-				case 2: return (x, y) => f(-y, x);
-				case 3: return (x, y) => f(-x, y);
-				case 4: return (x, y) => f(-x, -y);
-				case 5: return (x, y) => f(-y, -x);
-				case 6: return (x, y) => f(y, -x);
-				case 7: return (x, y) => f(x, -y);
-			}
-		}
-
-		private static Action<int, int> TranslateOctant(Action<int, int> f, int octant) {
-			switch (octant) {
-				default: return f;
-				case 1: return (x, y) => f(y, x);
-				case 2: return (x, y) => f(-y, x);
-				case 3: return (x, y) => f(-x, y);
-				case 4: return (x, y) => f(-x, -y);
-				case 5: return (x, y) => f(-y, -x);
-				case 6: return (x, y) => f(y, -x);
-				case 7: return (x, y) => f(x, -y);
-			}
-		}
 	}
-
 }

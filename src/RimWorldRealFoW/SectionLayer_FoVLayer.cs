@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using RimWorld;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -121,7 +122,7 @@ namespace RimWorldRealFoW {
 					MakeBaseGeometry(this.section, subMesh, AltitudeLayer.FogOfWar);
 				}
 
-				uint[] shownGrid = pawnFog.shownCells;
+				int[] shownGrid = pawnFog.getShownCells(Faction.OfPlayer);
 				bool[] revealedGrid = pawnFog.revealedCells;
 
 				CellRect cellRect = this.section.CellRect;
@@ -133,7 +134,7 @@ namespace RimWorldRealFoW {
 
 				for (int i = cellRect.minX; i <= cellRect.maxX; i++) {
 					for (int j = cellRect.minZ; j <= cellRect.maxZ; j++) {
-						if (shownGrid[cellIndices.CellToIndex(i, j)] == 0u) {
+						if (shownGrid[cellIndices.CellToIndex(i, j)] == 0) {
 							bool revealed = revealedGrid[cellIndices.CellToIndex(i, j)];
 							for (int k = 0; k < 9; k++) {
 								this.vertsCovered[k] = true;
@@ -144,7 +145,7 @@ namespace RimWorldRealFoW {
 								this.vertsCovered[l] = false;
 								this.vertsRevealed[l] = false;
 							}
-							if (j < num && shownGrid[cellIndices.CellToIndex(i, j + 1)] == 0u) {
+							if (j < num && shownGrid[cellIndices.CellToIndex(i, j + 1)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i, j + 1)];
 								this.vertsCovered[2] = true;
 								this.vertsRevealed[2] = revealed;
@@ -153,7 +154,7 @@ namespace RimWorldRealFoW {
 								this.vertsCovered[4] = true;
 								this.vertsRevealed[4] = revealed;
 							}
-							if (j > 0 && shownGrid[cellIndices.CellToIndex(i, j - 1)] == 0u) {
+							if (j > 0 && shownGrid[cellIndices.CellToIndex(i, j - 1)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i, j - 1)];
 								this.vertsCovered[6] = true;
 								this.vertsRevealed[6] = revealed;
@@ -162,7 +163,7 @@ namespace RimWorldRealFoW {
 								this.vertsCovered[0] = true;
 								this.vertsRevealed[0] = revealed;
 							}
-							if (i < num2 && shownGrid[cellIndices.CellToIndex(i + 1, j)] == 0u) {
+							if (i < num2 && shownGrid[cellIndices.CellToIndex(i + 1, j)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i + 1, j)];
 								this.vertsCovered[4] = true;
 								this.vertsRevealed[4] = revealed;
@@ -171,7 +172,7 @@ namespace RimWorldRealFoW {
 								this.vertsCovered[6] = true;
 								this.vertsRevealed[6] = revealed;
 							}
-							if (i > 0 && shownGrid[cellIndices.CellToIndex(i - 1, j)] == 0u) {
+							if (i > 0 && shownGrid[cellIndices.CellToIndex(i - 1, j)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i - 1, j)];
 								this.vertsCovered[0] = true;
 								this.vertsRevealed[0] = revealed;
@@ -180,22 +181,22 @@ namespace RimWorldRealFoW {
 								this.vertsCovered[2] = true;
 								this.vertsRevealed[2] = revealed;
 							}
-							if (j > 0 && i > 0 && shownGrid[cellIndices.CellToIndex(i - 1, j - 1)] == 0u) {
+							if (j > 0 && i > 0 && shownGrid[cellIndices.CellToIndex(i - 1, j - 1)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i - 1, j - 1)];
 								this.vertsCovered[0] = true;
 								this.vertsRevealed[0] = revealed;
 							}
-							if (j < num && i > 0 && shownGrid[cellIndices.CellToIndex(i - 1, j + 1)] == 0u) {
+							if (j < num && i > 0 && shownGrid[cellIndices.CellToIndex(i - 1, j + 1)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i - 1, j + 1)];
 								this.vertsCovered[2] = true;
 								this.vertsRevealed[2] = revealed;
 							}
-							if (j < num && i < num2 && shownGrid[cellIndices.CellToIndex(i + 1, j + 1)] == 0u) {
+							if (j < num && i < num2 && shownGrid[cellIndices.CellToIndex(i + 1, j + 1)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i + 1, j + 1)];
 								this.vertsCovered[4] = true;
 								this.vertsRevealed[4] = revealed;
 							}
-							if (j > 0 && i < num2 && shownGrid[cellIndices.CellToIndex(i + 1, j - 1)] == 0u) {
+							if (j > 0 && i < num2 && shownGrid[cellIndices.CellToIndex(i + 1, j - 1)] == 0) {
 								bool revealed = revealedGrid[cellIndices.CellToIndex(i + 1, j - 1)];
 								this.vertsCovered[6] = true;
 								this.vertsRevealed[6] = revealed;

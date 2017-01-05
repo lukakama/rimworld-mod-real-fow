@@ -11,18 +11,21 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using RimWorld;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW {
 	class MapComponentSeenFog : MapComponent {
-		public uint[] shownCells = null;
+		private int[][] factionShownCells = null;
 		public bool[] revealedCells = null;
 
 		bool initialized = false;
 
 		public MapComponentSeenFog(Map map) : base(map) {
-			shownCells = new uint[map.cellIndices.NumGridCells];
+			factionShownCells = new int[Mathf.CeilToInt(Find.World.factionManager.AllFactionsListForReading.Count * 1.2f)][];
 			revealedCells = new bool[map.cellIndices.NumGridCells];
 		}
 
@@ -35,11 +38,26 @@ namespace RimWorldRealFoW {
 			}
 		}
 
+		public int[] getShownCells(Faction faction) {
+			if (factionShownCells.Length < faction.loadID) {
+				int[][] newFactionShownCells = new int[Mathf.CeilToInt(faction.loadID * 1.2f)][];
+				Array.Copy(factionShownCells, newFactionShownCells, factionShownCells.Length);
+				factionShownCells = newFactionShownCells;
+			}
+
+			int[] shownCells = factionShownCells[faction.loadID];
+			if (shownCells == null) {
+				shownCells = new int[map.cellIndices.NumGridCells];
+				factionShownCells[faction.loadID] = shownCells;
+			}
+			return shownCells;
+		}
+
 		private void init() {
 			// First tick: hide all unseen objects.
 			foreach (IntVec3 cell in map.AllCells) {
 				foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-					if ((t.Faction == null || !t.Faction.IsPlayer) && shownCells[map.cellIndices.CellToIndex(cell)] == 0u) {
+					if ((t.Faction == null || !t.Faction.IsPlayer) && getShownCells(Faction.OfPlayer)[map.cellIndices.CellToIndex(cell)] == 0) {
 						CompHiddenable comp = t.TryGetComp<CompHiddenable>();
 						if (comp != null) {
 							comp.hide();
@@ -59,8 +77,8 @@ namespace RimWorldRealFoW {
 			// Reveal the starting position if home map and no pawns (landing).
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
-
-				ShadowCaster.ComputeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfView.MAX_RANGE),
+				ShadowCaster shadowCaster = new ShadowCaster();
+				shadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfView.MAX_RANGE),
 					// isOpaque
 					(int x, int y) => {
 						if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
@@ -108,9 +126,9 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public void incrementSeen(IntVec3 cell) {
+		public void incrementSeen(Faction faction, IntVec3 cell) {
 			int idx = map.cellIndices.CellToIndex(cell);
-			if (++shownCells[idx] == 1u) {
+			if ((++getShownCells(faction)[idx] == 1) && faction.IsPlayer) {
 				if (!revealedCells[idx]) {
 					revealedCells[idx] = true;
 				}
@@ -135,10 +153,10 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		internal void decrementSeen(IntVec3 cell) {
+		internal void decrementSeen(Faction faction, IntVec3 cell) {
 			int idx = map.cellIndices.CellToIndex(cell);
 
-			if (--shownCells[idx] == 0u) {
+			if ((--getShownCells(faction)[idx] == 0) && faction.IsPlayer) {
 				if (initialized) {
 					map.mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}

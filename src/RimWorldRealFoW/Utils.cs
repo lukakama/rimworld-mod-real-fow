@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using System;
 using System.Reflection;
 
 namespace RimWorldRealFoW {
@@ -29,6 +30,10 @@ namespace RimWorldRealFoW {
 
 		public static void execInstancePrivate(object _this, string methodName, params object[] values) {
 			_this.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(_this, values);
+		}
+
+		public static T getStaticPrivateValue<T>(Type type, string fieldName) {
+			return (T) type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
 		}
 	}
 }

@@ -26,11 +26,13 @@ namespace RimWorldRealFoW {
 		private IntVec3 lastPosition;
 		private float lastSightRange;
 		private bool lastIsPeeking;
-
+		
 		private bool[] viewMap;
 		private CellRect viewRect;
 		private bool[] newViewMap;
 		private CellRect newViewRect;
+
+		private List<IntVec3> viewPositions;
 
 		private Map map;
 		private MapComponentSeenFog mapCompSeenFog;
@@ -42,7 +44,9 @@ namespace RimWorldRealFoW {
 		private CompFlickable compFlickable;
 		private CompMannable mannableComp;
 
-		private bool setupDown = false;
+		public ShadowCaster shadowCaster;
+
+		private bool setupDone = false;
 
 		private Pawn pawn;
 		private Building_TurretGun turret;
@@ -50,7 +54,9 @@ namespace RimWorldRealFoW {
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
 
-			setupDown = true;
+			setupDone = true;
+
+			shadowCaster = new ShadowCaster();
 
 			calculated = false;
 			lastPosition = IntVec3.Invalid;
@@ -63,7 +69,8 @@ namespace RimWorldRealFoW {
 			newViewMap = new bool[1 + ((int) MAX_RANGE * 2)];
 			newViewRect = new CellRect();
 
-
+			viewPositions = new List<IntVec3>(5);
+			
 			compHiddenable = parent.GetComp<CompHiddenable>();
 			compGlower = parent.GetComp<CompGlower>();
 			compPowerTrader = parent.GetComp<CompPowerTrader>();
@@ -83,6 +90,8 @@ namespace RimWorldRealFoW {
 			updateFoV();
 		}
 
+		// private bool perfTestDone = false;
+
 		public override void CompTick() {
 			base.CompTick();
 
@@ -93,7 +102,7 @@ namespace RimWorldRealFoW {
 		}
 
 		public void updateFoV() {
-			if (!setupDown || Current.ProgramState == ProgramState.MapInitializing) {
+			if (!setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
 			}
 
@@ -114,24 +123,27 @@ namespace RimWorldRealFoW {
 					mapCompSeenFog.refogAll();
 				}
 
-				if (thing.Faction != null && thing.Faction.IsPlayer && (pawn == null || !pawn.Dead)) {
-					// Player things or alive pawn!
+				if (thing.Faction != null && (pawn == null || !pawn.Dead)) {
+					// Faction things or alive pawn!
 
 					if (pawn != null) {
 						// Alive Pawns!
 
-						float sightRange;
-						if (pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
-							// Sleeping: sight reduced to 20%.
-							sightRange = Mathf.Max(MAX_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight) * 0.2f, 1f);
-						} else {
-							sightRange = Mathf.Max(MAX_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight), 1f);
-						}
+						float sightRange = calcPawnSightRange(pawn.Position);
+
 						bool isPeeking = false;
-						if (pawn.CurJob != null && (pawn.CurJob.def == JobDefOf.AttackStatic || pawn.CurJob.def == JobDefOf.AttackMelee ||
-								  pawn.CurJob.def == JobDefOf.Wait || pawn.CurJob.def == JobDefOf.WaitCombat)) {
-							isPeeking = true;
+						if (pawn.CurJob != null) {
+							if (pawn.CurJob.def == JobDefOf.AttackStatic || pawn.CurJob.def == JobDefOf.AttackMelee ||
+								  pawn.CurJob.def == JobDefOf.Wait || pawn.CurJob.def == JobDefOf.WaitCombat) {
+								isPeeking = true;
+
+							} else if (pawn.CurJob.def == JobDefOf.Hunt &&
+									pawn.stances.curStance != null && !(pawn.stances.curStance is Stance_Mobile)) {
+								// Hunting end not moving.
+								isPeeking = true;
+							}
 						}
+
 						if (!calculated || pawn.Position != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
 							calculated = true;
 							lastPosition = pawn.Position;
@@ -190,23 +202,45 @@ namespace RimWorldRealFoW {
 						}
 					}
 
-				} else {
+				}
+			}
+		}
 
-					// Non player thing! (this should be moved to another Component...)
-					if (!calculated || thing.Position != lastPosition) {
-						calculated = true;
-						lastPosition = thing.Position;
+		public float calcPawnSightRange(IntVec3 position) {
+			float sightRange = MAX_RANGE* pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+			if (pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
+				// Sleeping: sight reduced to 20%.
+				sightRange *= 0.2f;
+			}
 
-						if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
-							if (mapCompSeenFog.shownCells[map.cellIndices.CellToIndex(thing.Position)] == 0) {
-								compHiddenable.hide();
-							} else {
-								compHiddenable.show();
-							}
-						}
+			// Additional dark debuff.
+			bool roofed = map.roofGrid.Roofed(position);
+			if (roofed || map.skyManager.CurSkyGlow != 1f) {
+				int darkModifier = 80;
+				// Each bionic eye reduce the dark debuff.
+				foreach (Hediff hediff in pawn.health.hediffSet.GetHediffs<Hediff_AddedPart>()) {
+					if (hediff.def == HediffDefOf.BionicEye) {
+						darkModifier += 10;
+					}
+				}
+
+				// Apply only if to debuff.
+				if (darkModifier < 100) {
+					if (roofed) {
+						sightRange *= (darkModifier / 100f);
+					} else {
+						// If unroofed, adjusted to sunlight (100% full light - 80% dark).
+						sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, map.skyManager.CurSkyGlow);
 					}
 				}
 			}
+
+			// Mininum sight.
+			if (sightRange < 1f) {
+				return 1f;
+			}
+
+			return sightRange;
 		}
 
 		public override void PostDeSpawn(Map map) {
@@ -224,12 +258,14 @@ namespace RimWorldRealFoW {
 
 			IntVec3 position = thing.Position;
 
+			int peekMod = (peek ? 1 : 0);
+
 			// Calculate new view rect.
 			CellRect occupedRect = thing.OccupiedRect();
-			newViewRect.maxX = Mathf.Max(position.x + intRadius, occupedRect.maxX);
-			newViewRect.minX = Mathf.Min(position.x - intRadius, occupedRect.minX);
-			newViewRect.maxZ = Mathf.Max(position.z + intRadius, occupedRect.maxZ);
-			newViewRect.minZ = Mathf.Min(position.z - intRadius, occupedRect.minZ);
+			newViewRect.maxX = Mathf.Max(position.x + intRadius + peekMod, occupedRect.maxX);
+			newViewRect.minX = Mathf.Min(position.x - intRadius - peekMod, occupedRect.minX);
+			newViewRect.maxZ = Mathf.Max(position.z + intRadius + peekMod, occupedRect.maxZ);
+			newViewRect.minZ = Mathf.Min(position.z - intRadius - peekMod, occupedRect.minZ);
 
 			int newViewWidth = newViewRect.Width;
 			int newViewArea = newViewRect.Area;
@@ -248,22 +284,24 @@ namespace RimWorldRealFoW {
 			foreach (IntVec3 occupiedCell in occupedRect.Cells) {
 				if (occupiedCell.InBounds(map)) {
 					newViewMap[CellIndicesUtility.CellToIndex(occupiedCell.x - newViewRect.minX, occupiedCell.z - newViewRect.minZ, newViewWidth)] = true;
-					mapCompSeenFog.incrementSeen(occupiedCell);
+					mapCompSeenFog.incrementSeen(thing.Faction, occupiedCell);
 				}
 			}
 
 			// Calculate Field of View (if necessary).
 			if (intRadius > 0) {
-				IEnumerable<IntVec3> viewPositions = new IntVec3[] { thing.Position };
-
+				viewPositions.Clear();
+				viewPositions.Add(thing.Position);
 				if (peek) {
-					viewPositions = viewPositions.Concat(GenAdj.CellsAdjacentCardinal(thing));
+					for (int i = 0; i < 4; i++) {
+						viewPositions.Add(thing.Position + GenAdj.CardinalDirections[i]);
+					}
 				}
 
 				foreach (IntVec3 viewPosition in viewPositions) {
-					if (viewPosition.IsInside(thing) || viewPosition.CanBeSeenOverFast(map)) {
+					if (viewPosition.IsInside(thing) || viewPosition.CanBeSeenOver(map)) {
 						if (intRadius != 0) {
-							ShadowCaster.ComputeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius - (viewPosition.IsInside(thing) ? 0 : 1),
+							shadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
 								// isOpaque
 								(int x, int y) => {
 									// Out of map positions are opaques...
@@ -279,7 +317,7 @@ namespace RimWorldRealFoW {
 										int idx = CellIndicesUtility.CellToIndex(x - newViewRect.minX, y - newViewRect.minZ, newViewWidth);
 										if (!newViewMap[idx]) {
 											newViewMap[idx] = true;
-											mapCompSeenFog.incrementSeen(new IntVec3(x, 0, y));
+											mapCompSeenFog.incrementSeen(thing.Faction, new IntVec3(x, 0, y));
 										}
 									}
 								});
@@ -313,7 +351,7 @@ namespace RimWorldRealFoW {
 					c.x += viewRect.minX;
 					c.z += viewRect.minZ;
 
-					mapCompSeenFog.decrementSeen(c);
+					mapCompSeenFog.decrementSeen(parent.Faction, c);
 
 					viewMap[i] = false;
 				}

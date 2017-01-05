@@ -29,17 +29,18 @@ namespace RimWorldRealFoW {
 		}
 
 		public static void injectComponents() {
-			CompProperties comPropsPawnFoV = new CompProperties(typeof(CompFieldOfView));
-			CompProperties comPropsThingHiddeable = new CompProperties(typeof(CompHiddenable));
+			CompProperties comPropsFieldOfView = new CompProperties(typeof(CompFieldOfView));
+			CompProperties comPropsHiddenable = new CompProperties(typeof(CompHiddenable));
+			CompProperties comPropsHideFromPlayer = new CompProperties(typeof(CompHideFromPlayer));
 
 			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs) {
 				if (typeof(MoteBubble) == def.thingClass) {
 					def.thingClass = typeof(MoteBubbleExt);
 				}
 
-				def.comps.Add(comPropsPawnFoV);
-				def.comps.Add(comPropsThingHiddeable);
-
+				def.comps.Add(comPropsHiddenable);
+				def.comps.Add(comPropsFieldOfView);
+				def.comps.Add(comPropsHideFromPlayer);
 			}
 		}
 
