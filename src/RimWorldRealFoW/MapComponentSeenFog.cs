@@ -13,7 +13,6 @@
 //   limitations under the License.
 using RimWorld;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -54,23 +53,15 @@ namespace RimWorldRealFoW {
 		}
 
 		private void init() {
-			// First tick: hide all unseen objects.
-			foreach (IntVec3 cell in map.AllCells) {
-				foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-					if ((t.Faction == null || !t.Faction.IsPlayer) && getShownCells(Faction.OfPlayer)[map.cellIndices.CellToIndex(cell)] == 0) {
-						CompHiddenable comp = t.TryGetComp<CompHiddenable>();
-						if (comp != null) {
-							comp.hide();
-						}
-					}
-				}
-			}
-
-			// Update all thing pov.
+			// Update all thing FoV and visibility.
 			foreach (Thing thing in map.listerThings.AllThings) {
-				CompFieldOfView comp = thing.TryGetComp<CompFieldOfView>();
-				if (comp != null) {
-					comp.updateFoV();
+				CompFieldOfView compFoV = thing.TryGetComp<CompFieldOfView>();
+				CompHideFromPlayer compVisibility = thing.TryGetComp<CompHideFromPlayer>();
+				if (compFoV != null) {
+					compFoV.updateFoV();
+				}
+				if (compVisibility != null) {
+					compVisibility.updateVisibility(true);
 				}
 			}
 
@@ -78,7 +69,7 @@ namespace RimWorldRealFoW {
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
 				ShadowCaster shadowCaster = new ShadowCaster();
-				shadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfView.MAX_RANGE),
+				shadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfView.NON_MECH_DEFAULT_RANGE),
 					// isOpaque
 					(int x, int y) => {
 						if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
@@ -143,11 +134,9 @@ namespace RimWorldRealFoW {
 				}
 
 				foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-					if (t.Faction == null || !t.Faction.IsPlayer) {
-						CompHiddenable comp = t.TryGetComp<CompHiddenable>();
-						if (comp != null) {
-							comp.show();
-						}
+					CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
+					if (comp != null) {
+						comp.updateVisibility(true);
 					}
 				}
 			}
@@ -162,11 +151,9 @@ namespace RimWorldRealFoW {
 				}
 
 				foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-					if (t.Faction == null || !t.Faction.IsPlayer) {
-						CompHiddenable comp = t.TryGetComp<CompHiddenable>();
-						if (comp != null) {
-							comp.hide();
-						}
+					CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
+					if (comp != null) {
+						comp.updateVisibility(true);
 					}
 				}
 			}

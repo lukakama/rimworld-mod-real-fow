@@ -16,6 +16,10 @@ using System.Reflection;
 
 namespace RimWorldRealFoW {
 	class Utils {
+		public static T getInstancePrivateProperty<T>(object _this, string fieldName) {
+			return (T) _this.GetType().GetProperty(fieldName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(_this, null);
+		}
+
 		public static T getInstancePrivateValue<T>(object _this, string fieldName) {
 			return (T) _this.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(_this);
 		}

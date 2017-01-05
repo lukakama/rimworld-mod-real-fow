@@ -43,16 +43,8 @@ namespace RimWorldRealFoW {
 
 
 			Map map = (thing == null) ? ((Zone) obj).Map : thing.Map;
-			if (thing != null) {
-				MapComponentSeenFog seenFog = Find.VisibleMap.GetComponent<MapComponentSeenFog>();
-				if (seenFog.getShownCells(Faction.OfPlayer)[Find.VisibleMap.cellIndices.CellToIndex(thing.Position)] == 0) {
-					return;
-				}
-
-				CompHiddenable comp = thing.TryGetComp<CompHiddenable>();
-				if (comp != null && comp.hidden) {
-					return;
-				}
+			if (thing != null && !thing.isVisible()) {
+				return;
 			}
 
 

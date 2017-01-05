@@ -14,13 +14,13 @@
 using RimWorld;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW {
 	class CompFieldOfView : ThingComp {
-		public static readonly float MAX_RANGE = 32f;
+		public static readonly float NON_MECH_DEFAULT_RANGE = 32f;
+		public static readonly float MECH_DEFAULT_RANGE = 40f;
 
 		private bool calculated;
 		private IntVec3 lastPosition;
@@ -49,6 +49,7 @@ namespace RimWorldRealFoW {
 		private bool setupDone = false;
 
 		private Pawn pawn;
+		private Building building;
 		private Building_TurretGun turret;
 
 		public override void PostSpawnSetup() {
@@ -63,11 +64,11 @@ namespace RimWorldRealFoW {
 			lastSightRange = 0f;
 			lastIsPeeking = false;
 
-			viewMap = new bool[1 + ((int) MAX_RANGE * 2)];
-			viewRect = new CellRect();
+			viewMap = new bool[0];
+			viewRect = new CellRect(0, 0, 0, 0);
 
-			newViewMap = new bool[1 + ((int) MAX_RANGE * 2)];
-			newViewRect = new CellRect();
+			newViewMap = new bool[0];
+			newViewRect = new CellRect(0, 0, 0, 0);
 
 			viewPositions = new List<IntVec3>(5);
 			
@@ -79,6 +80,7 @@ namespace RimWorldRealFoW {
 			mannableComp = parent.GetComp<CompMannable>();
 
 			pawn = parent as Pawn;
+			building = parent as Building;
 			turret = parent as Building_TurretGun;
 
 			updateFoV();
@@ -191,8 +193,8 @@ namespace RimWorldRealFoW {
 							calculateFoV(thing, sightRange, false);
 						}
 
-					} else {
-						// Others!
+					} else if (building != null && !building.CanBeSeenOver()) {
+						// Non see-through building!
 
 						if (!calculated || thing.Position != lastPosition) {
 							calculated = true;
@@ -207,30 +209,38 @@ namespace RimWorldRealFoW {
 		}
 
 		public float calcPawnSightRange(IntVec3 position) {
-			float sightRange = MAX_RANGE* pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
-			if (pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
+			float sightRange;
+			if (!pawn.def.race.IsMechanoid) {
+				sightRange = NON_MECH_DEFAULT_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+			} else {
+				sightRange = MECH_DEFAULT_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+			}
+			
+			if (!pawn.def.race.IsMechanoid && pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
 				// Sleeping: sight reduced to 20%.
 				sightRange *= 0.2f;
 			}
 
 			// Additional dark debuff.
-			bool roofed = map.roofGrid.Roofed(position);
-			if (roofed || map.skyManager.CurSkyGlow != 1f) {
-				int darkModifier = 80;
-				// Each bionic eye reduce the dark debuff.
-				foreach (Hediff hediff in pawn.health.hediffSet.GetHediffs<Hediff_AddedPart>()) {
-					if (hediff.def == HediffDefOf.BionicEye) {
-						darkModifier += 10;
+			if (!pawn.def.race.IsMechanoid) {
+				bool roofed = map.roofGrid.Roofed(position);
+				if (roofed || map.skyManager.CurSkyGlow != 1f) {
+					int darkModifier = 80;
+					// Each bionic eye reduce the dark debuff.
+					foreach (Hediff hediff in pawn.health.hediffSet.GetHediffs<Hediff_AddedPart>()) {
+						if (hediff.def == HediffDefOf.BionicEye) {
+							darkModifier += 10;
+						}
 					}
-				}
 
-				// Apply only if to debuff.
-				if (darkModifier < 100) {
-					if (roofed) {
-						sightRange *= (darkModifier / 100f);
-					} else {
-						// If unroofed, adjusted to sunlight (100% full light - 80% dark).
-						sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, map.skyManager.CurSkyGlow);
+					// Apply only if to debuff.
+					if (darkModifier < 100) {
+						if (roofed) {
+							sightRange *= (darkModifier / 100f);
+						} else {
+							// If unroofed, adjusted to sunlight (100% full light - 80% dark).
+							sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, map.skyManager.CurSkyGlow);
+						}
 					}
 				}
 			}

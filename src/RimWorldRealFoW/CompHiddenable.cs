@@ -23,13 +23,15 @@ namespace RimWorldRealFoW {
 		public void hide() {
 			if (!hidden) {
 				hidden = true;
+
 				if (parent.def.drawerType != DrawerType.MapMeshOnly) {
 					parent.Map.dynamicDrawManager.DeRegisterDrawable(parent);
 				}
 				if (parent.def.hasTooltip) {
 					parent.Map.tooltipGiverList.DeregisterTooltipGiver(parent);
 				}
-				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Things);
+
+				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Buildings | MapMeshFlag.Things);
 
 				Selector selector = Find.Selector;
 				if (selector.IsSelected(parent)) {
@@ -41,13 +43,15 @@ namespace RimWorldRealFoW {
 		public void show() {
 			if (hidden) {
 				hidden = false;
+
 				if (parent.def.drawerType != DrawerType.MapMeshOnly) {
 					parent.Map.dynamicDrawManager.RegisterDrawable(parent);
 				}
 				if (parent.def.hasTooltip) {
 					parent.Map.tooltipGiverList.RegisterTooltipGiver(parent);
 				}
-				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Things);
+
+				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Buildings | MapMeshFlag.Things);
 			}
 		}
 	}

@@ -11,7 +11,6 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -83,8 +82,7 @@ namespace RimWorldRealFoW {
 			for (int i = 0; i < thingList.Count; i++) {
 				Thing thing = thingList[i];
 				// >>>> Patch start
-				CompHiddenable comp = thing.TryGetComp<CompHiddenable>();
-				if ((comp == null || !comp.hidden) && thing.def.category != ThingCategory.Mote) {
+				if (thing.isVisible() && thing.def.category != ThingCategory.Mote) {
 					rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
 					string labelMouseover = thing.LabelMouseover;
 					Widgets.Label(rect, labelMouseover);

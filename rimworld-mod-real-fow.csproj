@@ -54,6 +54,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\RimWorldRealFoW\CompHiddenableUtils.cs" />
+    <Compile Include="src\RimWorldRealFoW\_GenMapUI.cs" />
+    <Compile Include="src\RimWorldRealFoW\_SectionLayer_Things.cs" />
     <Compile Include="src\RimWorldRealFoW\CompHideFromPlayer.cs" />
     <Compile Include="src\RimWorldRealFoW\MapComponentSeenFog.cs" />
     <Compile Include="src\RimWorldRealFoW\CompHiddenable.cs" />

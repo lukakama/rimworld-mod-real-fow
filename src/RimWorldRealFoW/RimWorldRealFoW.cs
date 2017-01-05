@@ -14,6 +14,7 @@
 using RimWorld;
 using System;
 using System.Reflection;
+using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW {
@@ -45,11 +46,13 @@ namespace RimWorldRealFoW {
 		}
 
 		public static void injectDetours() {
+			detour(typeof(GenConstruct), typeof(_GenConstruct), "CanPlaceBlueprintAt");
+			detour(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
 			detour(typeof(Selector), typeof(_Selector), "Select");
 			detour(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
-			detour(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
 			detour(typeof(PawnUIOverlay), typeof(_PawnUIOverlay), "DrawPawnGUIOverlay");
-			detour(typeof(GenConstruct), typeof(_GenConstruct), "CanPlaceBlueprintAt");
+			detour(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
+			detour(typeof(SectionLayer_Things), typeof(_SectionLayer_Things), "Regenerate");
 		}
 
 		public static void detour(Type sourceType, Type targetType, string methodName) {
