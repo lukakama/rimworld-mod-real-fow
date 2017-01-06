@@ -18,14 +18,27 @@ using Verse;
 
 namespace RimWorldRealFoW {
 	class MapComponentSeenFog : MapComponent {
-		private int[][] factionShownCells = null;
+		public int[] factionsShownCells = null;
 		public bool[] revealedCells = null;
 
-		bool initialized = false;
+		private int maxFactionLoadId;
+
+		private int mapCellLength;
+		private int mapSizeX;
+
+		private bool initialized = false;
+
+		private CellIndices cellIndices;
 
 		public MapComponentSeenFog(Map map) : base(map) {
-			factionShownCells = new int[Mathf.CeilToInt(Find.World.factionManager.AllFactionsListForReading.Count * 1.2f)][];
-			revealedCells = new bool[map.cellIndices.NumGridCells];
+			mapCellLength = map.cellIndices.NumGridCells;
+			cellIndices = map.cellIndices;
+			mapSizeX = map.Size.x;
+
+			maxFactionLoadId = Find.World.factionManager.AllFactionsListForReading.Count;
+
+			factionsShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
+			revealedCells = new bool[mapCellLength];
 		}
 
 		public override void MapComponentUpdate() {
@@ -37,19 +50,23 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public int[] getShownCells(Faction faction) {
-			if (factionShownCells.Length < faction.loadID) {
-				int[][] newFactionShownCells = new int[Mathf.CeilToInt(faction.loadID * 1.2f)][];
-				Array.Copy(factionShownCells, newFactionShownCells, factionShownCells.Length);
-				factionShownCells = newFactionShownCells;
+		public int getBaseIdx(Faction faction) {
+			return faction.loadID * mapCellLength;
+		}
+
+		public int resolveIdx(Faction faction, IntVec3 cell) {
+			if (maxFactionLoadId < faction.loadID) {
+				maxFactionLoadId = faction.loadID;
+				int[] newFactionShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
+				Array.Copy(factionsShownCells, newFactionShownCells, factionsShownCells.Length);
+				factionsShownCells = newFactionShownCells;
 			}
 
-			int[] shownCells = factionShownCells[faction.loadID];
-			if (shownCells == null) {
-				shownCells = new int[map.cellIndices.NumGridCells];
-				factionShownCells[faction.loadID] = shownCells;
-			}
-			return shownCells;
+			return (faction.loadID * mapCellLength) + (cell.z * mapSizeX) + cell.x;
+		}
+
+		public bool isShown(Faction faction, IntVec3 cell) {
+			return factionsShownCells[resolveIdx(faction, cell)] != 0;
 		}
 
 		private void init() {
@@ -118,8 +135,8 @@ namespace RimWorldRealFoW {
 		}
 
 		public void incrementSeen(Faction faction, IntVec3 cell) {
-			int idx = map.cellIndices.CellToIndex(cell);
-			if ((++getShownCells(faction)[idx] == 1) && faction.IsPlayer) {
+			if ((++factionsShownCells[resolveIdx(faction, cell)] == 1) && faction.IsPlayer) {
+				int idx = map.cellIndices.CellToIndex(cell);
 				if (!revealedCells[idx]) {
 					revealedCells[idx] = true;
 				}
@@ -143,9 +160,7 @@ namespace RimWorldRealFoW {
 		}
 
 		internal void decrementSeen(Faction faction, IntVec3 cell) {
-			int idx = map.cellIndices.CellToIndex(cell);
-
-			if ((--getShownCells(faction)[idx] == 0) && faction.IsPlayer) {
+			if ((--factionsShownCells[resolveIdx(faction, cell)] == 0) && faction.IsPlayer) {
 				if (initialized) {
 					map.mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}

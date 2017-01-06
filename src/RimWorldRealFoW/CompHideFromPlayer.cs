@@ -75,10 +75,13 @@ namespace RimWorldRealFoW {
 				if (map != thing.Map) {
 					map = thing.Map;
 					mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+
+				} else if (mapCompSeenFog == null) {
+					mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
 				}
 
 				if (mapCompSeenFog == null) {
-					mapCompSeenFog = new MapComponentSeenFog(thing.Map);
+					return;
 				}
 				
 				if (force || !calculated || thing.Position != lastPosition) {
@@ -89,9 +92,9 @@ namespace RimWorldRealFoW {
 
 					if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
 						if (!belongToPlayer) {
-							if (pawn != null && mapCompSeenFog.getShownCells(Faction.OfPlayer)[map.cellIndices.CellToIndex(thing.Position)] == 0) {
+							if (pawn != null && !mapCompSeenFog.isShown(Faction.OfPlayer, thing.Position)) {
 								compHiddenable.hide();
-							} else if (pawn == null && !seenByPlayer && mapCompSeenFog.getShownCells(Faction.OfPlayer)[map.cellIndices.CellToIndex(thing.Position)] == 0) {
+							} else if (pawn == null && !seenByPlayer && !mapCompSeenFog.isShown(Faction.OfPlayer, thing.Position)) {
 								compHiddenable.hide();
 							} else {
 								seenByPlayer = true;

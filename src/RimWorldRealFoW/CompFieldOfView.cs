@@ -32,7 +32,7 @@ namespace RimWorldRealFoW {
 		private bool[] newViewMap;
 		private CellRect newViewRect;
 
-		private List<IntVec3> viewPositions;
+		private IntVec3[] viewPositions;
 
 		private Map map;
 		private MapComponentSeenFog mapCompSeenFog;
@@ -65,12 +65,12 @@ namespace RimWorldRealFoW {
 			lastIsPeeking = false;
 
 			viewMap = new bool[0];
-			viewRect = new CellRect(0, 0, 0, 0);
+			viewRect = new CellRect();
 
 			newViewMap = new bool[0];
-			newViewRect = new CellRect(0, 0, 0, 0);
+			newViewRect = new CellRect();
 
-			viewPositions = new List<IntVec3>(5);
+			viewPositions = new IntVec3[5];
 			
 			compHiddenable = parent.GetComp<CompHiddenable>();
 			compGlower = parent.GetComp<CompGlower>();
@@ -91,8 +91,6 @@ namespace RimWorldRealFoW {
 
 			updateFoV();
 		}
-
-		// private bool perfTestDone = false;
 
 		public override void CompTick() {
 			base.CompTick();
@@ -221,26 +219,30 @@ namespace RimWorldRealFoW {
 				sightRange *= 0.2f;
 			}
 
-			// Additional dark debuff.
+			// Additional dark and weather debuff.
 			if (!pawn.def.race.IsMechanoid) {
-				bool roofed = map.roofGrid.Roofed(position);
-				if (roofed || map.skyManager.CurSkyGlow != 1f) {
-					int darkModifier = 80;
-					// Each bionic eye reduce the dark debuff.
+				float currGlow = map.glowGrid.GameGlowAt(position);
+				if (currGlow != 1f) {
+					int darkModifier = 70;
+					// Each bionic eye reduce the dark debuff by 15.
 					foreach (Hediff hediff in pawn.health.hediffSet.GetHediffs<Hediff_AddedPart>()) {
 						if (hediff.def == HediffDefOf.BionicEye) {
-							darkModifier += 10;
+							darkModifier += 15;
 						}
 					}
 
 					// Apply only if to debuff.
 					if (darkModifier < 100) {
-						if (roofed) {
-							sightRange *= (darkModifier / 100f);
-						} else {
-							// If unroofed, adjusted to sunlight (100% full light - 80% dark).
-							sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, map.skyManager.CurSkyGlow);
-						}
+						// Adjusted to glow (100% full light - 70% dark).
+						sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, currGlow);
+					}
+				}
+
+				if (!position.Roofed(map)) {
+					float weatherFactor = map.weatherManager.CurWeatherAccuracyMultiplier;
+					if (weatherFactor != 1f) {
+						// Weather factor is applied by half.
+						sightRange *= Mathf.Lerp(0.5f, 1f, weatherFactor);
 					}
 				}
 			}
@@ -266,19 +268,25 @@ namespace RimWorldRealFoW {
 
 			int intRadius = Mathf.RoundToInt(radius);
 
+			int viewWidth = viewRect.Width;
+			int viewArea = viewRect.Area;
+
 			IntVec3 position = thing.Position;
+
+			Faction faction = parent.Faction;
 
 			int peekMod = (peek ? 1 : 0);
 
 			// Calculate new view rect.
 			CellRect occupedRect = thing.OccupiedRect();
-			newViewRect.maxX = Mathf.Max(position.x + intRadius + peekMod, occupedRect.maxX);
-			newViewRect.minX = Mathf.Min(position.x - intRadius - peekMod, occupedRect.minX);
-			newViewRect.maxZ = Mathf.Max(position.z + intRadius + peekMod, occupedRect.maxZ);
-			newViewRect.minZ = Mathf.Min(position.z - intRadius - peekMod, occupedRect.minZ);
+			newViewRect.maxX = Math.Max(position.x + intRadius + peekMod, occupedRect.maxX);
+			newViewRect.minX = Math.Min(position.x - intRadius - peekMod, occupedRect.minX);
+			newViewRect.maxZ = Math.Max(position.z + intRadius + peekMod, occupedRect.maxZ);
+			newViewRect.minZ = Math.Min(position.z - intRadius - peekMod, occupedRect.minZ);
 
 			int newViewWidth = newViewRect.Width;
 			int newViewArea = newViewRect.Area;
+
 
 			// Clear or reset the new view map.
 			if (newViewMap.Length < newViewArea) {
@@ -289,33 +297,43 @@ namespace RimWorldRealFoW {
 				}
 			}
 
-
-			// Occupied cells ar always visible.
-			foreach (IntVec3 occupiedCell in occupedRect.Cells) {
-				if (occupiedCell.InBounds(map)) {
-					newViewMap[CellIndicesUtility.CellToIndex(occupiedCell.x - newViewRect.minX, occupiedCell.z - newViewRect.minZ, newViewWidth)] = true;
-					mapCompSeenFog.incrementSeen(thing.Faction, occupiedCell);
+			// Occupied cells are always visible.
+			for (int x = occupedRect.minX; x <= occupedRect.maxX; x++) {
+				for (int z = occupedRect.minZ; z <= occupedRect.maxZ; z++) {
+					newViewMap[CellIndicesUtility.CellToIndex(x - newViewRect.minX, z - newViewRect.minZ, newViewWidth)] = true;
+					if (viewMap.Length == 0 || x < viewRect.minX || z < viewRect.minZ || x > viewRect.maxX || z > viewRect.maxZ ||
+							!viewMap[CellIndicesUtility.CellToIndex(x - viewRect.minX, z - viewRect.minZ, viewWidth)]) {
+						mapCompSeenFog.incrementSeen(faction, new IntVec3(x, 0, z));
+					}
 				}
 			}
 
 			// Calculate Field of View (if necessary).
 			if (intRadius > 0) {
-				viewPositions.Clear();
-				viewPositions.Add(thing.Position);
-				if (peek) {
+				int viewPositionsCount;
+				viewPositions[0] = thing.Position;
+
+				if (!peek) {
+					viewPositionsCount = 1;
+				} else {
+					viewPositionsCount = 5;
 					for (int i = 0; i < 4; i++) {
-						viewPositions.Add(thing.Position + GenAdj.CardinalDirections[i]);
+						viewPositions[1 + i] = thing.Position + GenAdj.CardinalDirections[i];
 					}
 				}
 
-				foreach (IntVec3 viewPosition in viewPositions) {
+				int mapSizeX = map.Size.x;
+				int mapSizeZ = map.Size.z;
+
+				for (int i = 0; i < viewPositionsCount; i++) {
+					IntVec3 viewPosition = viewPositions[i];
 					if (viewPosition.IsInside(thing) || viewPosition.CanBeSeenOver(map)) {
 						if (intRadius != 0) {
 							shadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
 								// isOpaque
 								(int x, int y) => {
 									// Out of map positions are opaques...
-									if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
+									if (x <= 0 || y <= 0 || x >= mapSizeX - 1 || y >= mapSizeZ - 1) {
 										return true;
 									}
 									Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
@@ -323,11 +341,12 @@ namespace RimWorldRealFoW {
 								},
 								// setFoV
 								(int x, int y) => {
-									if (x >= 0 && y >= 0 && x < map.Size.x && y < map.Size.z) {
-										int idx = CellIndicesUtility.CellToIndex(x - newViewRect.minX, y - newViewRect.minZ, newViewWidth);
-										if (!newViewMap[idx]) {
-											newViewMap[idx] = true;
-											mapCompSeenFog.incrementSeen(thing.Faction, new IntVec3(x, 0, y));
+									int newIdx = CellIndicesUtility.CellToIndex(x - newViewRect.minX, y - newViewRect.minZ, newViewWidth);
+									if (!newViewMap[newIdx]) {
+										newViewMap[newIdx] = true;
+										if (viewMap.Length == 0 || x < viewRect.minX || y < viewRect.minZ || x > viewRect.maxX || y > viewRect.maxZ ||
+												!viewMap[CellIndicesUtility.CellToIndex(x - viewRect.minX, y - viewRect.minZ, viewWidth)]) {
+											mapCompSeenFog.incrementSeen(faction, new IntVec3(x, 0, y));
 										}
 									}
 								});
@@ -336,13 +355,25 @@ namespace RimWorldRealFoW {
 				}
 			}
 
-			unseeSeenCells();
+			// unseeSeenCells();
+			if (viewMap.Length > 0) {
+				for (int i = 0; i < viewArea; i++) {
+					if (viewMap[i]) {
+						int x = viewRect.minX + (i % viewWidth);
+						int z = viewRect.minZ + (i / viewWidth);
+						if (x < newViewRect.minX || z < newViewRect.minZ || x > newViewRect.maxX || z > newViewRect.maxZ ||
+								!newViewMap[CellIndicesUtility.CellToIndex(x - newViewRect.minX, z - newViewRect.minZ, newViewWidth)]) {
+							mapCompSeenFog.decrementSeen(faction, new IntVec3(x, 0, z));
+						}
+					}
+				}
+			}
 
 			// Copy the new view area.
 			if (viewMap.Length < newViewArea) {
 				viewMap = new bool[newViewArea];
 			}
-			Array.Copy(newViewMap, viewMap, newViewArea);
+			Buffer.BlockCopy(newViewMap, 0, viewMap, 0, sizeof(byte) * newViewArea);
 
 			// Copy the new view rect.
 			viewRect.maxX = newViewRect.maxX;
@@ -352,18 +383,15 @@ namespace RimWorldRealFoW {
 		}
 
 		private void unseeSeenCells() {
-			int viewWidth = viewRect.Width;
-			int viewHeight = viewRect.Height;
-			int viewArea = viewRect.Area;
-			for (int i = 0; i < viewArea; i++) {
-				if (viewMap[i]) {
-					IntVec3 c = CellIndicesUtility.IndexToCell(i, viewWidth, viewHeight);
-					c.x += viewRect.minX;
-					c.z += viewRect.minZ;
-
-					mapCompSeenFog.decrementSeen(parent.Faction, c);
-
-					viewMap[i] = false;
+			if (viewMap.Length > 0) {
+				int viewWidth = viewRect.Width;
+				int viewArea = viewRect.Area;
+				Faction faction = parent.Faction;
+				for (int i = 0; i < viewArea; i++) {
+					if (viewMap[i]) {
+						mapCompSeenFog.decrementSeen(faction, new IntVec3((i % viewWidth) + viewRect.minX, 0, (i / viewWidth) + viewRect.minZ));
+						viewMap[i] = false;
+					}
 				}
 			}
 		}

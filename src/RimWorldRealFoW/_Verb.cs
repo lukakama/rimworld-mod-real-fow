@@ -28,7 +28,7 @@ namespace RimWorldRealFoW {
 		private static bool seenByFaction(Thing thing, IntVec3 targetLoc) {
 			MapComponentSeenFog seenFog = thing.Map.GetComponent<MapComponentSeenFog>();
 			if (seenFog != null) {
-				return seenFog.getShownCells(thing.Faction)[thing.Map.cellIndices.CellToIndex(targetLoc)] != 0;
+				return seenFog.isShown(thing.Faction,targetLoc);
 			}
 
 			return true;
