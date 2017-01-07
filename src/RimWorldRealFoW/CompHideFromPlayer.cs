@@ -98,9 +98,9 @@ namespace RimWorldRealFoW {
 
 					if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
 						if (!belongToPlayer) {
-							if (pawn != null && !mapCompSeenFog.isShown(Faction.OfPlayer, thing.Position)) {
+							if (pawn != null && !hasPartSeenByPlayer()) {
 								compHiddenable.hide();
-							} else if (pawn == null && !seenByPlayer && !mapCompSeenFog.isShown(Faction.OfPlayer, thing.Position)) {
+							} else if (pawn == null && !seenByPlayer && !hasPartSeenByPlayer()) {
 								compHiddenable.hide();
 							} else {
 								seenByPlayer = true;
@@ -113,6 +113,16 @@ namespace RimWorldRealFoW {
 					}
 				}
 			}
+		}
+
+		private bool hasPartSeenByPlayer() {
+			Faction playerFaction = Faction.OfPlayer;
+			foreach (IntVec3 cell in parent.OccupiedRect().Cells) {
+				if (mapCompSeenFog.isShown(playerFaction, cell)) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }
