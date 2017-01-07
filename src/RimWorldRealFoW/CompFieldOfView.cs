@@ -228,7 +228,7 @@ namespace RimWorldRealFoW {
 
 			if (!shouldMove && !sleeping && !pawn.pather.MovingNow) {
 				Verb verb = pawn.TryGetAttackVerb(true);
-				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight && verb is Verb_Shoot) {
+				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight &&  verb.ownerEquipment.def.IsRangedWeapon) {
 					bool canLookForTarget = false;
 					if (pawn.CurJob != null) {
 						JobDef jobDef = pawn.CurJob.def;
@@ -243,7 +243,7 @@ namespace RimWorldRealFoW {
 							int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;
 
 							float statValue = pawn.GetStatValue(StatDefOf.AimingDelayFactor, true);
-							int ticksToSearch = (verb.verbProps.warmupTime * statValue).SecondsToTicks() * 4;
+							int ticksToSearch = (verb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((weaponRange - baseViewRange) / 2);
 
 							if (ticksStanding >= ticksToSearch) {
 								sightRange = verb.verbProps.range * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
