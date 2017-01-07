@@ -107,7 +107,7 @@ namespace RimWorldRealFoW {
 		public override void CompTick() {
 			base.CompTick();
 
-			if (pawn != null && pawn.pather.MovingNow) {
+			if (parent != null && parent.Spawned && pawn != null && pawn.pather != null && pawn.pather.MovingNow) {
 				lastMovementTick = Find.TickManager.TicksGame;
 			}
 
@@ -150,7 +150,7 @@ namespace RimWorldRealFoW {
 						bool isPeeking = false;
 						if (pawn.CurJob != null) {
 							JobDef jobDef = pawn.CurJob.def;
-							if (!pawn.pather.MovingNow && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat ||  jobDef == JobDefOf.Hunt)) {
+							if ((pawn.pather == null || !pawn.pather.MovingNow) && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat ||  jobDef == JobDefOf.Hunt)) {
 								isPeeking = true;
 							}
 						}
@@ -224,9 +224,9 @@ namespace RimWorldRealFoW {
 				return sightRange;
 			}
 
-			bool sleeping = !pawn.def.race.IsMechanoid && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
-
-			if (!shouldMove && !sleeping && !pawn.pather.MovingNow) {
+			bool sleeping = (parent.def.race == null || !pawn.def.race.IsMechanoid) && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
+			
+			if (!shouldMove && !sleeping && (pawn.pather == null || !pawn.pather.MovingNow)) {
 				Verb verb = pawn.TryGetAttackVerb(true);
 				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight &&  verb.ownerEquipment.def.IsRangedWeapon) {
 					bool canLookForTarget = false;
