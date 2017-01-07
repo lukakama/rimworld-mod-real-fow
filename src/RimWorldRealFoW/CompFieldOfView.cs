@@ -26,6 +26,8 @@ namespace RimWorldRealFoW {
 		private IntVec3 lastPosition;
 		private float lastSightRange;
 		private bool lastIsPeeking;
+
+		private float baseViewRange;
 		
 		private bool[] viewMap;
 		private CellRect viewRect;
@@ -51,6 +53,8 @@ namespace RimWorldRealFoW {
 		private Pawn pawn;
 		private Building building;
 		private Building_TurretGun turret;
+
+		private int lastMovementTick;
 
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
@@ -83,6 +87,14 @@ namespace RimWorldRealFoW {
 			building = parent as Building;
 			turret = parent as Building_TurretGun;
 
+			if (parent.def.race == null || !parent.def.race.IsMechanoid) {
+				baseViewRange = NON_MECH_DEFAULT_RANGE;
+			} else {
+				baseViewRange = MECH_DEFAULT_RANGE;
+			}
+
+			lastMovementTick = Find.TickManager.TicksGame;
+
 			updateFoV();
 		}
 
@@ -94,6 +106,10 @@ namespace RimWorldRealFoW {
 
 		public override void CompTick() {
 			base.CompTick();
+
+			if (pawn != null && pawn.pather.MovingNow) {
+				lastMovementTick = Find.TickManager.TicksGame;
+			}
 
 			// Check every 25 thick.
 			if (Find.TickManager.TicksGame % 25 == 0) {
@@ -129,17 +145,12 @@ namespace RimWorldRealFoW {
 					if (pawn != null) {
 						// Alive Pawns!
 
-						float sightRange = calcPawnSightRange(pawn.Position);
+						float sightRange = calcPawnSightRange(pawn.Position, false, false);
 
 						bool isPeeking = false;
 						if (pawn.CurJob != null) {
-							if (pawn.CurJob.def == JobDefOf.AttackStatic || pawn.CurJob.def == JobDefOf.AttackMelee ||
-								  pawn.CurJob.def == JobDefOf.Wait || pawn.CurJob.def == JobDefOf.WaitCombat) {
-								isPeeking = true;
-
-							} else if (pawn.CurJob.def == JobDefOf.Hunt &&
-									pawn.stances.curStance != null && !(pawn.stances.curStance is Stance_Mobile)) {
-								// Hunting end not moving.
+							JobDef jobDef = pawn.CurJob.def;
+							if (!pawn.pather.MovingNow && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat ||  jobDef == JobDefOf.Hunt)) {
 								isPeeking = true;
 							}
 						}
@@ -206,34 +217,76 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public float calcPawnSightRange(IntVec3 position) {
-			float sightRange;
-			if (!pawn.def.race.IsMechanoid) {
-				sightRange = NON_MECH_DEFAULT_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
-			} else {
-				sightRange = MECH_DEFAULT_RANGE * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+		public float calcPawnSightRange(IntVec3 position, bool forTargeting, bool shouldMove) {
+			float sightRange = 0f;
+			if (pawn == null) {
+				Log.Error("calcPawnSightRange performed on non pawn thing");
+				return sightRange;
 			}
-			
-			if (!pawn.def.race.IsMechanoid && pawn.CurJob != null && pawn.jobs.curDriver.asleep) {
-				// Sleeping: sight reduced to 20%.
+
+			bool sleeping = !pawn.def.race.IsMechanoid && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
+
+			if (!shouldMove && !sleeping && !pawn.pather.MovingNow) {
+				Verb verb = pawn.TryGetAttackVerb(true);
+				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight && verb is Verb_Shoot) {
+					bool canLookForTarget = false;
+					if (pawn.CurJob != null) {
+						JobDef jobDef = pawn.CurJob.def;
+						if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
+							canLookForTarget = true;
+						}
+					}
+
+					if (canLookForTarget) {
+						float weaponRange = verb.verbProps.range;
+						if (baseViewRange < weaponRange) {
+							int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;
+
+							float statValue = pawn.GetStatValue(StatDefOf.AimingDelayFactor, true);
+							int ticksToSearch = (verb.verbProps.warmupTime * statValue).SecondsToTicks() * 4;
+
+							if (ticksStanding >= ticksToSearch) {
+								sightRange = verb.verbProps.range * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+							} else {
+								int incValue = Mathf.RoundToInt((verb.verbProps.range - baseViewRange) * ((float) ticksStanding / ticksToSearch));
+
+								sightRange = (baseViewRange + incValue) * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+							}
+						}
+					}
+				}
+			}
+
+			if (sightRange == 0f) {
+				sightRange = baseViewRange * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+			}
+
+			if (!forTargeting && sleeping) {
+				// Sleeping: sight reduced to 20% (if not for targeting).
 				sightRange *= 0.2f;
 			}
+			// TODO: Apply moving penality?
+			/*else if (!calcOnlyBase && pawn.pather.MovingNow) {
+				// When moving, sight reduced to 90%s.
+				sightRange *= 0.9f;
+			}
+			*/
 
 			// Additional dark and weather debuff.
 			if (!pawn.def.race.IsMechanoid) {
 				float currGlow = map.glowGrid.GameGlowAt(position);
 				if (currGlow != 1f) {
-					int darkModifier = 70;
-					// Each bionic eye reduce the dark debuff by 15.
+					int darkModifier = 60;
+					// Each bionic eye reduce the dark debuff by 20.
 					foreach (Hediff hediff in pawn.health.hediffSet.GetHediffs<Hediff_AddedPart>()) {
 						if (hediff.def == HediffDefOf.BionicEye) {
-							darkModifier += 15;
+							darkModifier += 20;
 						}
 					}
 
 					// Apply only if to debuff.
 					if (darkModifier < 100) {
-						// Adjusted to glow (100% full light - 70% dark).
+						// Adjusted to glow (100% full light - 60% dark).
 						sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, currGlow);
 					}
 				}
@@ -266,6 +319,17 @@ namespace RimWorldRealFoW {
 				Log.Message("calculateFoV: " + thing.ThingID);
 			}*/
 
+			// Local references (C# is slow to access fields...).
+			Map map = this.map;
+			bool[] viewMap = this.viewMap;
+			CellRect viewRect = this.viewRect;
+			bool[] newViewMap = this.newViewMap;
+			CellRect newViewRect = this.newViewRect;
+			IntVec3[] viewPositions = this.viewPositions;
+
+			EdificeGrid edificeGrid = map.edificeGrid;
+			CellIndices cellIndices = map.cellIndices;
+
 			int intRadius = Mathf.RoundToInt(radius);
 
 			int viewWidth = viewRect.Width;
@@ -291,6 +355,7 @@ namespace RimWorldRealFoW {
 			// Clear or reset the new view map.
 			if (newViewMap.Length < newViewArea) {
 				newViewMap = new bool[newViewArea];
+				this.newViewMap = newViewMap;
 			} else {
 				for (int i = 0; i < newViewArea; i++) {
 					newViewMap[i] = false;
@@ -336,7 +401,7 @@ namespace RimWorldRealFoW {
 									if (x <= 0 || y <= 0 || x >= mapSizeX - 1 || y >= mapSizeZ - 1) {
 										return true;
 									}
-									Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
+									Building b = edificeGrid[cellIndices.CellToIndex(x, y)];
 									return (b != null && !b.CanBeSeenOver());
 								},
 								// setFoV
@@ -372,14 +437,15 @@ namespace RimWorldRealFoW {
 			// Copy the new view area.
 			if (viewMap.Length < newViewArea) {
 				viewMap = new bool[newViewArea];
+				this.viewMap = viewMap;
 			}
 			Buffer.BlockCopy(newViewMap, 0, viewMap, 0, sizeof(byte) * newViewArea);
 
 			// Copy the new view rect.
-			viewRect.maxX = newViewRect.maxX;
-			viewRect.minX = newViewRect.minX;
-			viewRect.maxZ = newViewRect.maxZ;
-			viewRect.minZ = newViewRect.minZ;
+			this.viewRect.maxX = newViewRect.maxX;
+			this.viewRect.minX = newViewRect.minX;
+			this.viewRect.maxZ = newViewRect.maxZ;
+			this.viewRect.minZ = newViewRect.minZ;
 		}
 
 		private void unseeSeenCells() {

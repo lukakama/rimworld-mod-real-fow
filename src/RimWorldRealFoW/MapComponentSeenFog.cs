@@ -28,11 +28,8 @@ namespace RimWorldRealFoW {
 
 		private bool initialized = false;
 
-		private CellIndices cellIndices;
-
 		public MapComponentSeenFog(Map map) : base(map) {
 			mapCellLength = map.cellIndices.NumGridCells;
-			cellIndices = map.cellIndices;
 			mapSizeX = map.Size.x;
 
 			maxFactionLoadId = Find.World.factionManager.AllFactionsListForReading.Count;
@@ -70,18 +67,6 @@ namespace RimWorldRealFoW {
 		}
 
 		private void init() {
-			// Update all thing FoV and visibility.
-			foreach (Thing thing in map.listerThings.AllThings) {
-				CompFieldOfView compFoV = thing.TryGetComp<CompFieldOfView>();
-				CompHideFromPlayer compVisibility = thing.TryGetComp<CompHideFromPlayer>();
-				if (compFoV != null) {
-					compFoV.updateFoV();
-				}
-				if (compVisibility != null) {
-					compVisibility.updateVisibility(true);
-				}
-			}
-
 			// Reveal the starting position if home map and no pawns (landing).
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
@@ -100,9 +85,30 @@ namespace RimWorldRealFoW {
 						if (!revealedCells[map.cellIndices.CellToIndex(x, y)]) {
 							IntVec3 cell = new IntVec3(x, 0, y);
 							revealedCells[map.cellIndices.CellToIndex(x, y)] = true;
+
+							foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
+								CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
+								if (comp != null) {
+									comp.forceSeen();
+								}
+							}
 						}
 					});
 			}
+
+			// Update all thing FoV and visibility.
+			foreach (Thing thing in map.listerThings.AllThings) {
+				CompFieldOfView compFoV = thing.TryGetComp<CompFieldOfView>();
+				CompHideFromPlayer compVisibility = thing.TryGetComp<CompHideFromPlayer>();
+				if (compFoV != null) {
+					compFoV.updateFoV();
+				}
+				if (compVisibility != null) {
+					compVisibility.updateVisibility(true);
+				}
+			}
+
+			
 
 			// Redraw everything.
 			foreach (IntVec3 current in map.AllCells) {

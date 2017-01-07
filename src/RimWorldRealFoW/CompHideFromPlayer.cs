@@ -64,6 +64,12 @@ namespace RimWorldRealFoW {
 			}
 		}
 
+		public void forceSeen() {
+			seenByPlayer = true;
+
+			updateVisibility(true);
+		}
+
 		public void updateVisibility(bool force) {
 			if (!setupDown || Current.ProgramState == ProgramState.MapInitializing) {
 				return;

@@ -1,7 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ModMetaData>
-  <name>Real Fog of War and Field of View</name>
-  <author>Luca De Petrillo</author>
-  <targetVersion>0.16.1393</targetVersion>
-  <description>This mod adds real Fog of War and Field of View to limit what can be seen on the map.</description>
+	<name>Real Fog of War</name>
+	<author>Luca De Petrillo</author>
+	<targetVersion>0.16.1393</targetVersion>
+	<url>https://ludeon.com/forums/index.php?topic=28938.0</url>
+	<description>This mod adds a real Fog of War based on Field of Views, to limit visiblity and interaction of elements on the map, for both player and AI.</description>
 </ModMetaData>

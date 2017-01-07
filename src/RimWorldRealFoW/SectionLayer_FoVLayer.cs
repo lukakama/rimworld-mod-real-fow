@@ -120,6 +120,9 @@ namespace RimWorldRealFoW {
 				LayerSubMesh subMesh = base.GetSubMesh(MatBases.FogOfWar);
 				if (subMesh.mesh.vertexCount == 0) {
 					MakeBaseGeometry(this.section, subMesh, AltitudeLayer.FogOfWar);
+					subMesh.colors = new List<Color32>(subMesh.mesh.vertexCount);
+				} else {
+					subMesh.colors.Clear();
 				}
 
 				bool[] fogGrid = map.fogGrid.fogGrid;
@@ -131,7 +134,7 @@ namespace RimWorldRealFoW {
 				CellRect cellRect = this.section.CellRect;
 				int num = base.Map.Size.z - 1;
 				int num2 = base.Map.Size.x - 1;
-				subMesh.colors = new List<Color32>(subMesh.mesh.vertexCount);
+				
 				bool flag = false;
 				CellIndices cellIndices = base.Map.cellIndices;
 

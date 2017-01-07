@@ -36,7 +36,8 @@ namespace RimWorldRealFoW {
 
 		private static bool fovLineOfSight(IntVec3 sourceSq, IntVec3 targetLoc, Thing thing) {
 			CompFieldOfView compFoV = thing.TryGetComp<CompFieldOfView>();
-			int sightRange = Mathf.RoundToInt(compFoV.calcPawnSightRange(sourceSq));
+			// If requires moving, calculate only the base sight.
+			int sightRange = Mathf.RoundToInt(compFoV.calcPawnSightRange(sourceSq, true, !thing.Position.AdjacentToCardinal(sourceSq)));
 
 			if (!sourceSq.InHorDistOf(targetLoc, sightRange)) {
 				// If out of sightRange.
