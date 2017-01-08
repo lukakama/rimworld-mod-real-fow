@@ -24,14 +24,18 @@ namespace RimWorldRealFoW {
 
 		private CompHiddenable compHiddenable;
 
-		private bool setupDown = false;
+		private bool setupDone = false;
 		private bool seenByPlayer;
 		private Pawn pawn;
+
+		private bool saveCompressible;
 
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
 
-			setupDown = true;
+			setupDone = true;
+
+			saveCompressible = parent.def != null && parent.def.saveCompressible;
 
 			calculated = false;
 			lastPosition = IntVec3.Invalid;
@@ -71,7 +75,7 @@ namespace RimWorldRealFoW {
 		}
 
 		public void updateVisibility(bool force) {
-			if (!setupDown || Current.ProgramState == ProgramState.MapInitializing) {
+			if (!setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
 			}
 
@@ -97,7 +101,7 @@ namespace RimWorldRealFoW {
 					bool belongToPlayer = thing.Faction != null && thing.Faction.IsPlayer;
 
 					if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
-						if (!belongToPlayer) {
+						if (!belongToPlayer && !saveCompressible) {
 							if (pawn != null && !hasPartSeenByPlayer()) {
 								compHiddenable.hide();
 							} else if (pawn == null && !seenByPlayer && !hasPartSeenByPlayer()) {

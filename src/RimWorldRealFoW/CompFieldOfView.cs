@@ -87,6 +87,9 @@ namespace RimWorldRealFoW {
 			building = parent as Building;
 			turret = parent as Building_TurretGun;
 
+			map = parent.Map;
+			mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+
 			if (parent.def.race == null || !parent.def.race.IsMechanoid) {
 				baseViewRange = NON_MECH_DEFAULT_RANGE;
 			} else {
@@ -117,6 +120,28 @@ namespace RimWorldRealFoW {
 			}
 		}
 
+		private void initMap() {
+			if (map != parent.Map) {
+				if (map != null) {
+					unseeSeenCells();
+				}
+				map = parent.Map;
+				mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+			}
+
+			if (mapCompSeenFog == null) {
+				// Try to retrieve.
+				mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+
+				// If still null, initialize it (old save).
+				if (mapCompSeenFog == null) {
+					mapCompSeenFog = new MapComponentSeenFog(map);
+					map.components.Add(mapCompSeenFog);
+					mapCompSeenFog.refogAll();
+				}
+			}
+		}
+
 		public void updateFoV() {
 			if (!setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
@@ -125,19 +150,7 @@ namespace RimWorldRealFoW {
 			Thing thing = base.parent;
 
 			if (thing != null && thing.Spawned && thing.Map != null && thing.Position != IntVec3.Invalid) {
-				if (map != thing.Map) {
-					if (map != null) {
-						unseeSeenCells();
-					}
-					map = thing.Map;
-					mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
-				}
-
-				if (mapCompSeenFog == null) {
-					mapCompSeenFog = new MapComponentSeenFog(thing.Map);
-					thing.Map.components.Add(mapCompSeenFog);
-					mapCompSeenFog.refogAll();
-				}
+				initMap();
 
 				if (thing.Faction != null && (pawn == null || !pawn.Dead)) {
 					// Faction things or alive pawn!
@@ -224,11 +237,13 @@ namespace RimWorldRealFoW {
 				return sightRange;
 			}
 
+			initMap();
+
 			bool sleeping = (parent.def.race == null || !pawn.def.race.IsMechanoid) && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
-			
+
 			if (!shouldMove && !sleeping && (pawn.pather == null || !pawn.pather.MovingNow)) {
 				Verb verb = pawn.TryGetAttackVerb(true);
-				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight &&  verb.ownerEquipment.def.IsRangedWeapon) {
+				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight && verb.ownerEquipment.def.IsRangedWeapon) {
 					bool canLookForTarget = false;
 					if (pawn.CurJob != null) {
 						JobDef jobDef = pawn.CurJob.def;
