@@ -13,7 +13,6 @@
 //   limitations under the License.
 using RimWorld;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -26,6 +25,7 @@ namespace RimWorldRealFoW {
 		private IntVec3 lastPosition;
 		private float lastSightRange;
 		private bool lastIsPeeking;
+		private Faction lastFaction;
 
 		private float baseViewRange;
 		
@@ -56,6 +56,8 @@ namespace RimWorldRealFoW {
 
 		private int lastMovementTick;
 
+		private bool disabled;
+
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
 
@@ -69,10 +71,10 @@ namespace RimWorldRealFoW {
 			lastIsPeeking = false;
 
 			viewMap = new bool[0];
-			viewRect = new CellRect();
+			viewRect = new CellRect(-1, -1, 0, 0);
 
 			newViewMap = new bool[0];
-			newViewRect = new CellRect();
+			newViewRect = new CellRect(-1, -1, 0, 0);
 
 			viewPositions = new IntVec3[5];
 			
@@ -96,9 +98,18 @@ namespace RimWorldRealFoW {
 				baseViewRange = MECH_DEFAULT_RANGE;
 			}
 
+			disabled = false;
+
 			lastMovementTick = Find.TickManager.TicksGame;
 
 			updateFoV();
+		}
+
+		public override void PostExposeData() {
+			base.PostExposeData();
+
+			Scribe_Values.LookValue<int>(ref this.lastMovementTick, "fovLastMovementTick", Find.TickManager.TicksGame, false);
+			Scribe_Values.LookValue<bool>(ref this.disabled, "fovDisabled", false, false);
 		}
 
 		public override void ReceiveCompSignal(string signal) {
@@ -142,8 +153,8 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public void updateFoV() {
-			if (!setupDone || Current.ProgramState == ProgramState.MapInitializing) {
+		public void updateFoV(bool forceUpdate = false) {
+			if (disabled || !setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
 			}
 
@@ -158,25 +169,40 @@ namespace RimWorldRealFoW {
 					if (pawn != null) {
 						// Alive Pawns!
 
-						float sightRange = calcPawnSightRange(pawn.Position, false, false);
-
+						float sightRange;
 						bool isPeeking = false;
-						if (pawn.CurJob != null) {
-							JobDef jobDef = pawn.CurJob.def;
-							if ((pawn.pather == null || !pawn.pather.MovingNow) && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat ||  jobDef == JobDefOf.Hunt)) {
-								isPeeking = true;
+						if (pawn.RaceProps != null && pawn.RaceProps.Animal && (pawn.playerSettings == null || pawn.playerSettings.master == null || pawn.training == null || !pawn.training.IsCompleted(TrainableDefOf.Release))) {
+							// If animal, only those with a master set and release training can contribute to the faction FoW.
+							sightRange = -1;
+						} else {
+							sightRange = calcPawnSightRange(pawn.Position, false, false);
+
+							if (pawn.CurJob != null) {
+								JobDef jobDef = pawn.CurJob.def;
+								if ((pawn.pather == null || !pawn.pather.MovingNow) && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt)) {
+									isPeeking = true;
+								}
 							}
 						}
 
-						if (!calculated || pawn.Position != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || pawn.Position != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
 							calculated = true;
 							lastPosition = pawn.Position;
 							lastSightRange = sightRange;
 							lastIsPeeking = isPeeking;
 
-							calculateFoV(thing, sightRange, isPeeking);
-						}
+							// Faction change. Unseen and clear old seen cells
+							if (lastFaction != null && lastFaction != thing.Faction) {
+								unseeSeenCells(lastFaction);
+								lastFaction = thing.Faction;
+							}
 
+							if (sightRange != -1) {
+								calculateFoV(thing, sightRange, isPeeking);
+							} else {
+								unseeSeenCells();
+							}
+						}
 					} else if (compGlower != null) {
 						// Glowers!
 
@@ -185,15 +211,25 @@ namespace RimWorldRealFoW {
 						if ((compPowerTrader != null && !compPowerTrader.PowerOn) ||
 								  (compRefuelable != null && !compRefuelable.HasFuel) ||
 								  (compFlickable != null && !compFlickable.SwitchIsOn)) {
-							sightRange = 0f;
+							sightRange = -1f;
 						}
 
-						if (!calculated || thing.Position != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || thing.Position != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
 							lastPosition = thing.Position;
 							lastSightRange = sightRange;
 
-							calculateFoV(thing, sightRange, false);
+							// Faction change. Unseen and clear old seen cells
+							if (lastFaction != null && lastFaction != thing.Faction) {
+								unseeSeenCells(lastFaction);
+								lastFaction = thing.Faction;
+							}
+
+							if (sightRange != -1) {
+								calculateFoV(thing, sightRange, false);
+							} else {
+								unseeSeenCells();
+							}
 						}
 
 					} else if (turret != null && mannableComp == null) {
@@ -204,28 +240,36 @@ namespace RimWorldRealFoW {
 						if ((compPowerTrader != null && !compPowerTrader.PowerOn) ||
 								  (compRefuelable != null && !compRefuelable.HasFuel) ||
 								  (compFlickable != null && !compFlickable.SwitchIsOn)) {
-							sightRange = 0f;
+							sightRange = -1f;
 						}
 
-						if (!calculated || thing.Position != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || thing.Position != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
 							lastPosition = thing.Position;
 							lastSightRange = sightRange;
 
-							calculateFoV(thing, sightRange, false);
+							// Faction change. Unseen and clear old seen cells
+							if (lastFaction != null && lastFaction != thing.Faction) {
+								unseeSeenCells(lastFaction);
+								lastFaction = thing.Faction;
+							}
+
+							if (sightRange != -1) {
+								calculateFoV(thing, sightRange, false);
+							} else {
+								unseeSeenCells();
+							}
 						}
-
-					} else if (building != null && !building.CanBeSeenOver()) {
-						// Non see-through building!
-
-						if (!calculated || thing.Position != lastPosition) {
-							calculated = true;
-							lastPosition = thing.Position;
-
-							calculateFoV(thing, 0f, false);
-						}
+					} else {
+						// Disable the component (this thing doesn't need the FoV calculation).
+						disabled = true;
 					}
-
+				} else if (thing.Faction != lastFaction) {
+					// Faction change (from a faction to nothing). Unseen and clear old seen cells
+					if (lastFaction != null) {
+						unseeSeenCells(lastFaction);
+						lastFaction = thing.Faction;
+					}
 				}
 			}
 		}
@@ -288,7 +332,7 @@ namespace RimWorldRealFoW {
 			*/
 
 			// Additional dark and weather debuff.
-			if (!pawn.def.race.IsMechanoid) {
+			if (pawn.def.race == null || !pawn.def.race.IsMechanoid) {
 				float currGlow = map.glowGrid.GameGlowAt(position);
 				if (currGlow != 1f) {
 					int darkModifier = 60;
@@ -381,7 +425,8 @@ namespace RimWorldRealFoW {
 			for (int x = occupedRect.minX; x <= occupedRect.maxX; x++) {
 				for (int z = occupedRect.minZ; z <= occupedRect.maxZ; z++) {
 					newViewMap[CellIndicesUtility.CellToIndex(x - newViewRect.minX, z - newViewRect.minZ, newViewWidth)] = true;
-					if (viewMap.Length == 0 || x < viewRect.minX || z < viewRect.minZ || x > viewRect.maxX || z > viewRect.maxZ ||
+					// Mark as seen only new cells.
+					if (x < viewRect.minX || z < viewRect.minZ || x > viewRect.maxX || z > viewRect.maxZ || viewMap.Length == 0 ||
 							!viewMap[CellIndicesUtility.CellToIndex(x - viewRect.minX, z - viewRect.minZ, viewWidth)]) {
 						mapCompSeenFog.incrementSeen(faction, new IntVec3(x, 0, z));
 					}
@@ -402,8 +447,8 @@ namespace RimWorldRealFoW {
 					}
 				}
 
-				int mapSizeX = map.Size.x;
-				int mapSizeZ = map.Size.z;
+				int mapWitdh = map.Size.x - 1;
+				int mapHeight = map.Size.z - 1;
 
 				for (int i = 0; i < viewPositionsCount; i++) {
 					IntVec3 viewPosition = viewPositions[i];
@@ -413,7 +458,7 @@ namespace RimWorldRealFoW {
 								// isOpaque
 								(int x, int y) => {
 									// Out of map positions are opaques...
-									if (x <= 0 || y <= 0 || x >= mapSizeX - 1 || y >= mapSizeZ - 1) {
+									if (x <= 0 || y <= 0 || x >= mapWitdh || y >= mapHeight) {
 										return true;
 									}
 									Building b = edificeGrid[cellIndices.CellToIndex(x, y)];
@@ -424,7 +469,8 @@ namespace RimWorldRealFoW {
 									int newIdx = CellIndicesUtility.CellToIndex(x - newViewRect.minX, y - newViewRect.minZ, newViewWidth);
 									if (!newViewMap[newIdx]) {
 										newViewMap[newIdx] = true;
-										if (viewMap.Length == 0 || x < viewRect.minX || y < viewRect.minZ || x > viewRect.maxX || y > viewRect.maxZ ||
+										// Mark as seen only new cells.
+										if (x < viewRect.minX || y < viewRect.minZ || x > viewRect.maxX || y > viewRect.maxZ || viewMap.Length == 0 ||
 												!viewMap[CellIndicesUtility.CellToIndex(x - viewRect.minX, y - viewRect.minZ, viewWidth)]) {
 											mapCompSeenFog.incrementSeen(faction, new IntVec3(x, 0, y));
 										}
@@ -435,7 +481,7 @@ namespace RimWorldRealFoW {
 				}
 			}
 
-			// unseeSeenCells();
+			// Mark as unseen old cells not present anymore in the updated FoV.
 			if (viewMap.Length > 0) {
 				for (int i = 0; i < viewArea; i++) {
 					if (viewMap[i]) {
@@ -449,31 +495,40 @@ namespace RimWorldRealFoW {
 				}
 			}
 
-			// Copy the new view area.
+			// Update the view area.
 			if (viewMap.Length < newViewArea) {
 				viewMap = new bool[newViewArea];
 				this.viewMap = viewMap;
 			}
 			Buffer.BlockCopy(newViewMap, 0, viewMap, 0, sizeof(byte) * newViewArea);
 
-			// Copy the new view rect.
+			// Update the view rect.
 			this.viewRect.maxX = newViewRect.maxX;
 			this.viewRect.minX = newViewRect.minX;
 			this.viewRect.maxZ = newViewRect.maxZ;
 			this.viewRect.minZ = newViewRect.minZ;
 		}
 
-		private void unseeSeenCells() {
-			if (viewMap.Length > 0) {
+		private void unseeSeenCells(Faction faction = null) {
+			if (faction == null) {
+				faction = parent.Faction;
+			}
+
+			if (viewRect.maxX >= 0 && viewRect.minX >= 0 && viewRect.maxZ >= 0 && viewRect.minZ >= 0 && viewMap.Length > 0) {
 				int viewWidth = viewRect.Width;
 				int viewArea = viewRect.Area;
-				Faction faction = parent.Faction;
 				for (int i = 0; i < viewArea; i++) {
 					if (viewMap[i]) {
 						mapCompSeenFog.decrementSeen(faction, new IntVec3((i % viewWidth) + viewRect.minX, 0, (i / viewWidth) + viewRect.minZ));
 						viewMap[i] = false;
 					}
 				}
+
+				// Clear the view rect.
+				viewRect.maxX = -1;
+				viewRect.minX = -1;
+				viewRect.maxZ = -1;
+				viewRect.minZ = -1;
 			}
 		}
 	}
