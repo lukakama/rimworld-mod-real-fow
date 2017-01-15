@@ -28,14 +28,10 @@ namespace RimWorldRealFoW {
 		private bool seenByPlayer;
 		private Pawn pawn;
 
-		private bool saveCompressible;
-
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
 
 			setupDone = true;
-
-			saveCompressible = parent.def != null && parent.def.saveCompressible;
 
 			calculated = false;
 			lastPosition = IntVec3.Invalid;
@@ -71,10 +67,10 @@ namespace RimWorldRealFoW {
 		public void forceSeen() {
 			seenByPlayer = true;
 
-			updateVisibility(true);
+			updateVisibility(true, true);
 		}
 
-		public void updateVisibility(bool force) {
+		public void updateVisibility(bool forceCheck, bool forceUpdate = false) {
 			if (!setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
 			}
@@ -94,23 +90,28 @@ namespace RimWorldRealFoW {
 					return;
 				}
 				
-				if (force || !calculated || thing.Position != lastPosition) {
+				if (forceCheck || !calculated || thing.Position != lastPosition) {
 					calculated = true;
 					lastPosition = thing.Position;
 
 					bool belongToPlayer = thing.Faction != null && thing.Faction.IsPlayer;
 
-					if (mapCompSeenFog != null && compHiddenable != null && !map.fogGrid.IsFogged(thing.Position)) {
-						if (!belongToPlayer && !saveCompressible) {
-							if (pawn != null && !hasPartSeenByPlayer()) {
-								compHiddenable.hide();
-							} else if (pawn == null && !seenByPlayer && !hasPartSeenByPlayer()) {
-								compHiddenable.hide();
+					if (mapCompSeenFog != null && !map.fogGrid.IsFogged(thing.Position)) {
+						if (thing.def.isSaveable && !thing.def.saveCompressible) {
+							if (!belongToPlayer) {
+								if (pawn != null && !hasPartShownToPlayer()) {
+									compHiddenable.hide();
+								} else if (pawn == null && !seenByPlayer && !hasPartShownToPlayer()) {
+									compHiddenable.hide();
+								} else {
+									seenByPlayer = true;
+									compHiddenable.show();
+								}
 							} else {
 								seenByPlayer = true;
 								compHiddenable.show();
 							}
-						} else {
+						} else if ((forceUpdate || !seenByPlayer) && thing.fowInKnownCell()) {
 							seenByPlayer = true;
 							compHiddenable.show();
 						}
@@ -119,7 +120,7 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		private bool hasPartSeenByPlayer() {
+		private bool hasPartShownToPlayer() {
 			Faction playerFaction = Faction.OfPlayer;
 			foreach (IntVec3 cell in parent.OccupiedRect().Cells) {
 				if (mapCompSeenFog.isShown(playerFaction, cell)) {

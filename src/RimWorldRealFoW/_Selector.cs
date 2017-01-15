@@ -43,7 +43,7 @@ namespace RimWorldRealFoW {
 
 
 			Map map = (thing == null) ? ((Zone) obj).Map : thing.Map;
-			if (thing != null && !thing.isVisible()) {
+			if (thing != null && !thing.fowIsVisible()) {
 				return;
 			}
 

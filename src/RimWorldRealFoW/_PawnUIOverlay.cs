@@ -23,7 +23,7 @@ namespace RimWorldRealFoW {
 				return;
 			}
 
-			if (!pawn.isVisible()) {
+			if (!pawn.fowIsVisible()) {
 				return;
 			}
 

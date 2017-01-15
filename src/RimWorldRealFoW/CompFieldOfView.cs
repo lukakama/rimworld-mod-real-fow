@@ -15,6 +15,7 @@ using RimWorld;
 using System;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RimWorldRealFoW {
 	class CompFieldOfView : ThingComp {
@@ -54,7 +55,11 @@ namespace RimWorldRealFoW {
 		private Building building;
 		private Building_TurretGun turret;
 
+		private Pawn_PathFollower pawnPather;
+
 		private int lastMovementTick;
+
+		private int lastPositionUpdateTick;
 
 		private bool disabled;
 
@@ -89,6 +94,10 @@ namespace RimWorldRealFoW {
 			building = parent as Building;
 			turret = parent as Building_TurretGun;
 
+			if (pawn != null) {
+				pawnPather = pawn.pather;
+			}
+
 			map = parent.Map;
 			mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
 
@@ -101,7 +110,7 @@ namespace RimWorldRealFoW {
 			disabled = false;
 
 			lastMovementTick = Find.TickManager.TicksGame;
-
+			lastPositionUpdateTick = lastMovementTick;
 			updateFoV();
 		}
 
@@ -121,12 +130,17 @@ namespace RimWorldRealFoW {
 		public override void CompTick() {
 			base.CompTick();
 
-			if (parent != null && parent.Spawned && pawn != null && pawn.pather != null && pawn.pather.MovingNow) {
-				lastMovementTick = Find.TickManager.TicksGame;
+			int currentTick = Find.TickManager.TicksGame;
+
+			if (parent != null && parent.Spawned && pawn != null && pawnPather != null && pawnPather.MovingNow) {
+				lastMovementTick = currentTick;
 			}
 
-			// Check every 25 thick.
-			if (Find.TickManager.TicksGame % 25 == 0) {
+			// Update at every position change, every 30 ticks from last position change.
+			if (lastPosition != IntVec3.Invalid && lastPosition != parent.Position) {
+				lastPositionUpdateTick = currentTick;
+				updateFoV();
+			} else if ((currentTick - lastPositionUpdateTick) % 30 == 0) {
 				updateFoV();
 			}
 		}
@@ -179,7 +193,7 @@ namespace RimWorldRealFoW {
 
 							if (pawn.CurJob != null) {
 								JobDef jobDef = pawn.CurJob.def;
-								if ((pawn.pather == null || !pawn.pather.MovingNow) && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt)) {
+								if ((pawnPather == null || !pawnPather.MovingNow) && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt)) {
 									isPeeking = true;
 								}
 							}
@@ -285,7 +299,7 @@ namespace RimWorldRealFoW {
 
 			bool sleeping = (parent.def.race == null || !pawn.def.race.IsMechanoid) && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
 
-			if (!shouldMove && !sleeping && (pawn.pather == null || !pawn.pather.MovingNow)) {
+			if (!shouldMove && !sleeping && (pawnPather == null || !pawnPather.MovingNow)) {
 				Verb verb = pawn.TryGetAttackVerb(true);
 				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight && verb.ownerEquipment.def.IsRangedWeapon) {
 					bool canLookForTarget = false;
@@ -325,7 +339,7 @@ namespace RimWorldRealFoW {
 				sightRange *= 0.2f;
 			}
 			// TODO: Apply moving penality?
-			/*else if (!calcOnlyBase && pawn.pather.MovingNow) {
+			/*else if (!calcOnlyBase && pawnPather.MovingNow) {
 				// When moving, sight reduced to 90%s.
 				sightRange *= 0.9f;
 			}
@@ -449,7 +463,7 @@ namespace RimWorldRealFoW {
 
 				int mapWitdh = map.Size.x - 1;
 				int mapHeight = map.Size.z - 1;
-
+				Building b;
 				for (int i = 0; i < viewPositionsCount; i++) {
 					IntVec3 viewPosition = viewPositions[i];
 					if (viewPosition.IsInside(thing) || viewPosition.CanBeSeenOver(map)) {
@@ -461,7 +475,7 @@ namespace RimWorldRealFoW {
 									if (x <= 0 || y <= 0 || x >= mapWitdh || y >= mapHeight) {
 										return true;
 									}
-									Building b = edificeGrid[cellIndices.CellToIndex(x, y)];
+									b = edificeGrid[cellIndices.CellToIndex(x, y)];
 									return (b != null && !b.CanBeSeenOver());
 								},
 								// setFoV
@@ -483,10 +497,12 @@ namespace RimWorldRealFoW {
 
 			// Mark as unseen old cells not present anymore in the updated FoV.
 			if (viewMap.Length > 0) {
+				int x;
+				int z;
 				for (int i = 0; i < viewArea; i++) {
 					if (viewMap[i]) {
-						int x = viewRect.minX + (i % viewWidth);
-						int z = viewRect.minZ + (i / viewWidth);
+						x = viewRect.minX + (i % viewWidth);
+						z = viewRect.minZ + (i / viewWidth);
 						if (x < newViewRect.minX || z < newViewRect.minZ || x > newViewRect.maxX || z > newViewRect.maxZ ||
 								!newViewMap[CellIndicesUtility.CellToIndex(x - newViewRect.minX, z - newViewRect.minZ, newViewWidth)]) {
 							mapCompSeenFog.decrementSeen(faction, new IntVec3(x, 0, z));

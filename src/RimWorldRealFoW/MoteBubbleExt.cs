@@ -24,7 +24,7 @@ namespace RimWorldRealFoW {
 
 		private bool linkShown(MoteAttachLink link) {
 			if (link.Linked && link.Target != null && link.Target.Thing != null) {
-				return link.Target.Thing.isVisible();
+				return link.Target.Thing.fowIsVisible();
 			}
 			return true;
 		}

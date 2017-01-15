@@ -13,6 +13,7 @@
 //   limitations under the License.
 using System;
 using System.Reflection;
+using RimWorld;
 
 namespace RimWorldRealFoW {
 	class Utils {
@@ -38,6 +39,13 @@ namespace RimWorldRealFoW {
 
 		public static T getStaticPrivateValue<T>(Type type, string fieldName) {
 			return (T) type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+		}
+
+		internal static void execStaticPrivate(Type type, string methodName, params object[] values) {
+			type.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, values);
+		}
+		internal static T execStaticPrivate<T>(Type type, string methodName, params object[] values) {
+			return (T) type.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, values);
 		}
 	}
 }

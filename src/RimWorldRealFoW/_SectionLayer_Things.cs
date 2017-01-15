@@ -14,7 +14,7 @@ namespace RimWorldRealFoW {
 						if (thing.def.drawerType != DrawerType.RealtimeOnly || !Utils.getInstancePrivateValue<bool>(_this, "requireAddToMapMesh")) {
 							if (thing.def.hideAtSnowDepth >= 1f || Utils.getInstancePrivateProperty<Map>(_this, "Map").snowGrid.GetDepth(thing.Position) <= thing.def.hideAtSnowDepth) {
 								if (thing.Position.x == current.x && thing.Position.z == current.z) {
-									if (thing.isVisible()) {
+									if (thing.fowIsVisible(true)) {
 										Utils.execInstancePrivate(_this, "TakePrintFrom", thing);
 									}
 								}

@@ -37,6 +37,7 @@ namespace RimWorldRealFoW {
 			
 
 			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs) {
+				// Patch motes
 				if (typeof(MoteBubble) == def.thingClass) {
 					def.thingClass = typeof(MoteBubbleExt);
 				}
@@ -49,6 +50,23 @@ namespace RimWorldRealFoW {
 					def.comps.Add(comPropsViewBlockerWatcher);
 				}
 			}
+
+			// Patch designators
+			foreach (DesignationCategoryDef def in DefDatabase<DesignationCategoryDef>.AllDefs) {
+				bool patched = false;
+				for (int i = 0; i < def.specialDesignatorClasses.Count; i++) {
+					Type originalType = def.specialDesignatorClasses[i];
+					Type patchedType = Type.GetType("RimWorldRealFoW.PatchedDesignators.FoW_" + originalType.Name, false);
+					if (patchedType != null) {
+						def.specialDesignatorClasses[i] = patchedType;
+						patched = true;
+						Log.Message("Patched designator from " + originalType + " to " + patchedType + ".");
+					}
+				}
+				if (patched) {
+					def.ResolveReferences();
+				}
+			}
 		}
 
 		public static void injectDetours() {
@@ -59,6 +77,7 @@ namespace RimWorldRealFoW {
 			detour(typeof(PawnUIOverlay), typeof(_PawnUIOverlay), "DrawPawnGUIOverlay");
 			detour(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
 			detour(typeof(SectionLayer_Things), typeof(_SectionLayer_Things), "Regenerate");
+			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
 		}
 
 		public static void detour(Type sourceType, Type targetType, string methodName) {

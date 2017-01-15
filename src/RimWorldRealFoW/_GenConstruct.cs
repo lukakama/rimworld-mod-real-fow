@@ -37,7 +37,7 @@ namespace RimWorldRealFoW {
 			if (seenFog != null) {
 				CellRect.CellRectIterator itCellRect = cellRect.GetIterator();
 				while (!itCellRect.Done()) {
-					if (!seenFog.revealedCells[map.cellIndices.CellToIndex(itCellRect.Current)]) {
+					if (!seenFog.knownCells[map.cellIndices.CellToIndex(itCellRect.Current)]) {
 						return "CannotPlaceInUndiscovered".Translate();
 					}
 					itCellRect.MoveNext();

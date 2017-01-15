@@ -19,7 +19,7 @@ using Verse;
 namespace RimWorldRealFoW {
 	class MapComponentSeenFog : MapComponent {
 		public int[] factionsShownCells = null;
-		public bool[] revealedCells = null;
+		public bool[] knownCells = null;
 
 		private int maxFactionLoadId;
 
@@ -35,7 +35,7 @@ namespace RimWorldRealFoW {
 			maxFactionLoadId = Find.World.factionManager.AllFactionsListForReading.Count;
 
 			factionsShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
-			revealedCells = new bool[mapCellLength];
+			knownCells = new bool[mapCellLength];
 		}
 
 		public override void MapComponentUpdate() {
@@ -82,9 +82,9 @@ namespace RimWorldRealFoW {
 					},
 					// setFoV
 					(int x, int y) => {
-						if (!revealedCells[map.cellIndices.CellToIndex(x, y)]) {
+						if (!knownCells[map.cellIndices.CellToIndex(x, y)]) {
 							IntVec3 cell = new IntVec3(x, 0, y);
-							revealedCells[map.cellIndices.CellToIndex(x, y)] = true;
+							knownCells[map.cellIndices.CellToIndex(x, y)] = true;
 
 							foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
 								CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
@@ -108,18 +108,14 @@ namespace RimWorldRealFoW {
 				}
 			}
 
-			
-
 			// Redraw everything.
-			foreach (IntVec3 current in map.AllCells) {
-				map.mapDrawer.MapMeshDirty(current, SectionLayer_FoVLayer.mapMeshFlag | MapMeshFlag.Things, true, false);
-			}
+			map.mapDrawer.RegenerateEverythingNow();
 		}
 
 		public override void ExposeData() {
 			base.ExposeData();
 
-			ArrayExposeUtility.ExposeBoolArray(ref revealedCells, map.Size.x, map.Size.z, "revealedCells");
+			ArrayExposeUtility.ExposeBoolArray(ref knownCells, map.Size.x, map.Size.z, "revealedCells");
 		}
 
 		public void refogAll() {
@@ -143,8 +139,9 @@ namespace RimWorldRealFoW {
 		public void incrementSeen(Faction faction, IntVec3 cell) {
 			if ((++factionsShownCells[resolveIdx(faction, cell)] == 1) && faction.IsPlayer) {
 				int idx = map.cellIndices.CellToIndex(cell);
-				if (!revealedCells[idx]) {
-					revealedCells[idx] = true;
+
+				if (!knownCells[idx]) {
+					knownCells[idx] = true;
 				}
 
 				FogGrid fogGrid = map.fogGrid;
@@ -152,12 +149,18 @@ namespace RimWorldRealFoW {
 					fogGrid.Unfog(cell);
 				}
 
+				Designation designation = this.map.designationManager.DesignationAt(cell, DesignationDefOf.Mine);
+				if (designation != null && MineUtility.MineableInCell(cell, this.map) == null) {
+					designation.Delete();
+				}
+
 				if (initialized) {
 					map.mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
-
+				
+				CompHideFromPlayer comp;
 				foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-					CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
+					comp = t.TryGetComp<CompHideFromPlayer>();
 					if (comp != null) {
 						comp.updateVisibility(true);
 					}
@@ -171,8 +174,9 @@ namespace RimWorldRealFoW {
 					map.mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
 
+				CompHideFromPlayer comp;
 				foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-					CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
+					comp = t.TryGetComp<CompHideFromPlayer>();
 					if (comp != null) {
 						comp.updateVisibility(true);
 					}

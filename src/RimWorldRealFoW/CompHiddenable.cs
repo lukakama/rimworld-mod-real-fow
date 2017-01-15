@@ -31,12 +31,13 @@ namespace RimWorldRealFoW {
 					parent.Map.tooltipGiverList.DeregisterTooltipGiver(parent);
 				}
 
-				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Buildings | MapMeshFlag.Things);
-
 				Selector selector = Find.Selector;
 				if (selector.IsSelected(parent)) {
 					selector.Deselect(parent);
 				}
+
+				// Mark everything to be updated
+				updateMeshes();
 			}
 		}
 
@@ -51,9 +52,19 @@ namespace RimWorldRealFoW {
 					parent.Map.tooltipGiverList.RegisterTooltipGiver(parent);
 				}
 
-				parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Buildings | MapMeshFlag.Things);
+				// Mark everything to be updated
+				updateMeshes();
+			}
+		}
+
+		private void updateMeshes() {
+			Map map = parent.Map;
+			MapMeshFlag allFlags = MapMeshFlag.Buildings | MapMeshFlag.BuildingsDamage | MapMeshFlag.GroundGlow | MapMeshFlag.PowerGrid | MapMeshFlag.Roofs | MapMeshFlag.Snow | MapMeshFlag.Terrain | MapMeshFlag.Things | MapMeshFlag.Zone;
+			foreach (IntVec3 cell in parent.OccupiedRect().Cells) {
+				if (cell.InBounds(map)) {
+					map.mapDrawer.MapMeshDirty(cell, allFlags, false, false);
+				}
 			}
 		}
 	}
-
 }

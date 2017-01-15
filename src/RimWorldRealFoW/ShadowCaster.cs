@@ -114,8 +114,10 @@ namespace RimWorldRealFoW {
 
 			bool wasLastCellOpaque = false;
 			bool lastCellCalcuated = false;
+			bool inRadius;
+			bool currentIsOpaque;
 			for (int y = topY; y >= bottomY; --y) {
-				bool inRadius = isInRadius(x, y, radius);
+				inRadius = isInRadius(x, y, radius);
 				if (inRadius) {
 					// The current cell is in the field of view.
 					setFieldOfView(x, y);
@@ -127,7 +129,7 @@ namespace RimWorldRealFoW {
 				// an opaque cell and not scan the cells that are also too
 				// far away in the next column.
 
-				bool currentIsOpaque = !inRadius || isOpaque(x, y);
+				currentIsOpaque = !inRadius || isOpaque(x, y);
 				if (lastCellCalcuated) {
 					if (currentIsOpaque) {
 						// We've found a boundary from transparent to opaque. Make a note
@@ -137,7 +139,7 @@ namespace RimWorldRealFoW {
 							// opaque cell that is below the transparent cell. 
 							queue.Enqueue(new ColumnPortion(
 								 x + 1,
-								 new DirectionVector(x * 2 - 1, y * 2 + 1),
+								 new DirectionVector(x * 2 - 1, y * 2 + 1), 
 								 topVector));
 						}
 					} else if (wasLastCellOpaque) {

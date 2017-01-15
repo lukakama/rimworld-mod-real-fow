@@ -54,7 +54,26 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\RimWorldRealFoW\CompHiddenableUtils.cs" />
+    <Compile Include="src\RimWorldRealFoW\FoWThingUtils.cs" />
+    <Compile Include="src\RimWorldRealFoW\_WorkGiver_DoBill.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_AreaHomeExpand.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_ZoneAdd_Growing.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_ZoneAddStockpile_Dumping.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_ZoneAddStockpile_Resources.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Tame.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_PlantsCut.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_PlantsHarvest.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Hunt.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_PlantsHarvestWood.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Uninstall.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_SmoothFloor.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_RemoveFloor.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Mine.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Haul.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Deconstruct.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_Claim.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_AreaNoRoofExpand.cs" />
+    <Compile Include="src\RimWorldRealFoW\PatchedDesignators\FoW_Designator_AreaBuildRoofExpand.cs" />
     <Compile Include="src\RimWorldRealFoW\CompViewBlockerWatcher.cs" />
     <Compile Include="src\RimWorldRealFoW\_GenMapUI.cs" />
     <Compile Include="src\RimWorldRealFoW\_SectionLayer_Things.cs" />

@@ -37,7 +37,7 @@ namespace RimWorldRealFoW {
 			Rect rect;
 			// >>>> Patch start
 			MapComponentSeenFog seenFog = Find.VisibleMap.GetComponent<MapComponentSeenFog>();
-			if (c.Fogged(Find.VisibleMap) || (seenFog != null && !seenFog.revealedCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
+			if (c.Fogged(Find.VisibleMap) || (seenFog != null && !seenFog.knownCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
 			// <<<< Patch end
 				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
 				Widgets.Label(rect, "Undiscovered".Translate());
@@ -82,7 +82,7 @@ namespace RimWorldRealFoW {
 			for (int i = 0; i < thingList.Count; i++) {
 				Thing thing = thingList[i];
 				// >>>> Patch start
-				if (thing.isVisible() && thing.def.category != ThingCategory.Mote) {
+				if (thing.fowIsVisible() && thing.def.category != ThingCategory.Mote) {
 					rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
 					string labelMouseover = thing.LabelMouseover;
 					Widgets.Label(rect, labelMouseover);
