@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ThingDefs>
+
+	<!-- Surveillance Camera -->
+	<ThingDef ParentName="BuildingBase">
+		<thingClass>Building</thingClass>
+
+		<defName>SurveillanceCamera</defName>
+		<label>surveillance camera</label>
+		<description>Surveillance camera that provide vision for an area.</description>
+
+		<category>Building</category>
+		<minifiedDef>MinifiedFurniture</minifiedDef>
+		<altitudeLayer>FlyingItem</altitudeLayer>
+		<passability>Standable</passability>
+		<selectable>true</selectable>
+		<leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
+		<soundImpactDefault>BulletImpactMetal</soundImpactDefault>
+		<designationCategory>Security</designationCategory>
+		<rotatable>false</rotatable>
+		
+		<graphicData>
+			<texPath>Things/Buildings/SurveillanceCamera</texPath>
+			<graphicClass>Graphic_Single</graphicClass>
+			<shadowData>
+				<volume>(0.3, 0.6, 0.3)</volume>
+				<offset>(0,0,-0.1)</offset>
+			</shadowData>
+			<damageData>
+				<rect>(0.2,0.2,0.6,0.6)</rect>
+			</damageData>
+		</graphicData>
+		
+		<costList>
+			<Steel>15</Steel>
+		</costList>
+		
+		<statBases>
+			<Mass>4</Mass>
+			
+			<MaxHitPoints>50</MaxHitPoints>
+			<WorkToBuild>170</WorkToBuild>
+			<Flammability>1.0</Flammability>
+		</statBases>
+
+		<comps>
+			<li Class="CompProperties_Breakdownable"/>
+			<li Class="CompProperties_Flickable"/>
+			<li Class="CompProperties_Power">
+				<compClass>CompPowerTrader</compClass>
+				<basePowerConsumption>75</basePowerConsumption>
+				<shortCircuitInRain>false</shortCircuitInRain>
+			</li>
+			<li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_ProvideVision">
+				<viewRadius>12</viewRadius>
+			</li>
+		</comps>
+		
+		<researchPrerequisites>
+			<li>Electricity</li>
+		</researchPrerequisites>
+	</ThingDef>
+	
+	<!-- Watch Tower -->
+	<ThingDef ParentName="BuildingBase">
+		<thingClass>Building</thingClass>
+
+		<defName>WatchTower</defName>
+		<label>watch tower</label>
+		<description>Watch Tower that increase vision when pawns stand on it.</description>
+
+		<category>Building</category>
+		<altitudeLayer>Building</altitudeLayer>
+		<passability>Standable</passability>
+		<selectable>true</selectable>
+		<leaveResourcesWhenKilled>true</leaveResourcesWhenKilled>
+		<designationCategory>Security</designationCategory>
+		<rotatable>false</rotatable>
+
+		<stuffCategories>
+			<li>Metallic</li>
+			<li>Woody</li>
+			<li>Stony</li>
+		</stuffCategories>
+		
+		<graphicData>
+			<texPath>Things/Buildings/WatchTower</texPath>
+			<graphicClass>Graphic_Single</graphicClass>
+			<drawSize>(2,2)</drawSize>
+			<damageData>
+				<rect>(0.1,0.1,1.8,1.8)</rect>
+			</damageData>
+		</graphicData>
+
+		<castEdgeShadows>true</castEdgeShadows>
+		<staticSunShadowHeight>1.0</staticSunShadowHeight>
+		<fillPercent>0.5</fillPercent>
+		
+		<size>(2,2)</size>
+
+		<pathCost>200</pathCost>
+		
+		<costStuffCount>75</costStuffCount>
+
+		<placeWorkers>
+			<li>PlaceWorker_NotUnderRoof</li>
+		</placeWorkers>
+		
+		<statBases>
+			<MaxHitPoints>150</MaxHitPoints>
+			<WorkToBuild>2000</WorkToBuild>
+			<Mass>20</Mass>
+			<Flammability>1.0</Flammability>
+		</statBases>
+
+		<comps>
+			<li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_AffectVision">
+				<fovMultiplier>1.5</fovMultiplier>
+			</li>
+		</comps>
+	</ThingDef>
+	
+</ThingDefs>
