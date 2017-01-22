@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RimWorldRealFoW {
 	[StaticConstructorOnStartup]
@@ -90,6 +91,7 @@ namespace RimWorldRealFoW {
 			detour(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
 			detour(typeof(SectionLayer_Things), typeof(_SectionLayer_Things), "Regenerate");
 			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
+			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
 
 			detour(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageSound));
 			detour(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterType), typeof(GlobalTargetInfo), typeof(string));

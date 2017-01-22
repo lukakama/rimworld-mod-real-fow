@@ -55,6 +55,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_HaulAIUtility.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompProvideVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompAffectVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\Properties\CompProperties_AffectVision.cs" />
