@@ -127,8 +127,7 @@ xcopy /Q /Y /S /I "$(ProjectDir)Defs\*" "$(TargetDir)..\Defs"
 xcopy /Q /Y /S /I "$(ProjectDir)Textures\*" "$(TargetDir)..\Textures"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>rd /S /Q "$(TargetDir)..\About"
-rd /S /Q "$(TargetDir)..\Defs"
+    <PreBuildEvent>rd /S /Q "$(TargetDir)..\Defs"
 rd /S /Q "$(TargetDir)..\Textures"
 </PreBuildEvent>
   </PropertyGroup>
