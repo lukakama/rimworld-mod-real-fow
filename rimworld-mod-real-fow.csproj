@@ -60,6 +60,7 @@
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompAffectVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\Properties\CompProperties_AffectVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\Properties\CompProperties_ProvideVision.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Utils\MapUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Utils\FoWThingUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_LetterStack.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_WorkGiver_DoBill.cs" />

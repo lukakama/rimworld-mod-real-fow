@@ -37,7 +37,7 @@ namespace RimWorldRealFoW.Detours {
 			float num = 0f;
 			Rect rect;
 			// >>>> Patch start
-			MapComponentSeenFog seenFog = Find.VisibleMap.GetComponent<MapComponentSeenFog>();
+			MapComponentSeenFog seenFog = Find.VisibleMap.getMapComponentSeenFog();
 			if (c.Fogged(Find.VisibleMap) || (seenFog != null && !seenFog.knownCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
 			// <<<< Patch end
 				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);

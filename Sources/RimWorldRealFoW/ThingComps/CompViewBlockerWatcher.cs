@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using RimWorldRealFoW.Utils;
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorldRealFoW.ThingComps {
@@ -20,7 +21,7 @@ namespace RimWorldRealFoW.ThingComps {
 				viewBloker = true;
 
 				map = parent.Map;
-				mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+				mapCompSeenFog = map.getMapComponentSeenFog();
 
 				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
 				

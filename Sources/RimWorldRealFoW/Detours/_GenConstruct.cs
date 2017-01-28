@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorld;
+using RimWorldRealFoW.Utils;
 using System.Collections.Generic;
 using Verse;
 
@@ -33,7 +34,7 @@ namespace RimWorldRealFoW.Detours {
 			if (center.Fogged(map)) {
 				return "CannotPlaceInUndiscovered".Translate();
 			}
-			MapComponentSeenFog seenFog = map.GetComponent<MapComponentSeenFog>();
+			MapComponentSeenFog seenFog = map.getMapComponentSeenFog();
 			if (seenFog != null) {
 				CellRect.CellRectIterator itCellRect = cellRect.GetIterator();
 				while (!itCellRect.Done()) {

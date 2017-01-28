@@ -91,10 +91,10 @@ namespace RimWorldRealFoW.ThingComps {
 				if (map != thing.Map) {
 					map = thing.Map;
 					fogGrid = map.fogGrid;
-					mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+					mapCompSeenFog = thing.Map.getMapComponentSeenFog();
 
 				} else if (mapCompSeenFog == null) {
-					mapCompSeenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+					mapCompSeenFog = thing.Map.getMapComponentSeenFog();
 				}
 
 				if (mapCompSeenFog == null) {

@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorld;
+using RimWorldRealFoW.Utils;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -119,7 +120,7 @@ namespace RimWorldRealFoW.SectionLayers {
 
 		public override void Regenerate() {
 			if (pawnFog == null) {
-				pawnFog = base.Map.GetComponent<MapComponentSeenFog>();
+				pawnFog = base.Map.getMapComponentSeenFog();
 			}
 
 			if (pawnFog != null) {

@@ -13,6 +13,7 @@
 //   limitations under the License.
 using RimWorld;
 using RimWorldRealFoW.ShadowCasters;
+using RimWorldRealFoW.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -116,7 +117,7 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 
 			map = parent.Map;
-			mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+			mapCompSeenFog = map.getMapComponentSeenFog();
 			thingGrid = map.thingGrid;
 			cellIndices = map.cellIndices;
 
@@ -208,21 +209,9 @@ namespace RimWorldRealFoW.ThingComps {
 					unseeSeenCells();
 				}
 				map = parent.Map;
-				mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+				mapCompSeenFog = map.getMapComponentSeenFog();
 				thingGrid = map.thingGrid;
 				cellIndices = map.cellIndices;
-			}
-
-			if (mapCompSeenFog == null) {
-				// Try to retrieve.
-				mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
-
-				// If still null, initialize it (old save).
-				if (mapCompSeenFog == null) {
-					mapCompSeenFog = new MapComponentSeenFog(map);
-					map.components.Add(mapCompSeenFog);
-					mapCompSeenFog.refogAll();
-				}
 			}
 		}
 

@@ -21,7 +21,7 @@ namespace RimWorldRealFoW.Utils {
 		}
 
 		public static bool fowInKnownCell(this Thing _this) {
-			MapComponentSeenFog mapComponent = _this.Map.GetComponent<MapComponentSeenFog>();
+			MapComponentSeenFog mapComponent = _this.Map.getMapComponentSeenFog();
 			if (mapComponent != null) {
 				Faction playerFaction = Faction.OfPlayer;
 				Map map = _this.Map;

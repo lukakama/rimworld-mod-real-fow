@@ -7,7 +7,7 @@ namespace RimWorldRealFoW.Detours.PatchedDesignators {
 	class FoW_Designator_RemoveFloor : Designator_RemoveFloor {
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c) {
-			MapComponentSeenFog mapCmq = base.Map.GetComponent<MapComponentSeenFog>();
+			MapComponentSeenFog mapCmq = base.Map.getMapComponentSeenFog();
 			if (mapCmq != null && c.InBounds(base.Map) && !mapCmq.knownCells[base.Map.cellIndices.CellToIndex(c)]) {
 				return false;
 			}

@@ -27,7 +27,7 @@ namespace RimWorldRealFoW.Detours {
 		}
 
 		private static bool seenByFaction(Thing thing, IntVec3 targetLoc) {
-			MapComponentSeenFog seenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+			MapComponentSeenFog seenFog = thing.Map.getMapComponentSeenFog();
 			if (seenFog != null) {
 				return seenFog.isShown(thing.Faction,targetLoc);
 			}
@@ -36,7 +36,7 @@ namespace RimWorldRealFoW.Detours {
 		}
 
 		private static bool fovLineOfSight(IntVec3 sourceSq, IntVec3 targetLoc, Thing thing) {
-			MapComponentSeenFog seenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+			MapComponentSeenFog seenFog = thing.Map.getMapComponentSeenFog();
 			CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
 			// If requires moving, calculate only the base sight.
 			int sightRange = compFoV.calcPawnSightRange(sourceSq, true, !thing.Position.AdjacentToCardinal(sourceSq));

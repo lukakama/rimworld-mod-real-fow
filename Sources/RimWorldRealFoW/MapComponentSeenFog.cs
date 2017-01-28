@@ -22,7 +22,7 @@ using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW {
-	class MapComponentSeenFog : MapComponent {
+	public class MapComponentSeenFog : MapComponent {
 		public int[] factionsShownCells = null;
 		public bool[] knownCells = null;
 
@@ -143,24 +143,6 @@ namespace RimWorldRealFoW {
 			base.ExposeData();
 
 			ArrayExposeUtility.ExposeBoolArray(ref knownCells, map.Size.x, map.Size.z, "revealedCells");
-		}
-
-		public void refogAll() {
-			FogGrid fogGrid = map.fogGrid;
-			for (int i = 0; i < fogGrid.fogGrid.Length; i++) {
-				fogGrid.fogGrid[i] = true;
-			}
-			foreach (IntVec3 current in map.AllCells) {
-				map.mapDrawer.MapMeshDirty(current, MapMeshFlag.FogOfWar | SectionLayer_FoVLayer.mapMeshFlag);
-			}
-			FloodFillerFog.FloodUnfog(map.mapPawns.FreeColonistsSpawned.RandomElement<Pawn>().Position, map);
-
-			foreach (Thing thing in map.listerThings.AllThings) {
-				CompFieldOfViewWatcher comp = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
-				if (comp != null) {
-					comp.updateFoV();
-				}
-			}
 		}
 
 		public void incrementSeen(Faction faction, int idx) {
