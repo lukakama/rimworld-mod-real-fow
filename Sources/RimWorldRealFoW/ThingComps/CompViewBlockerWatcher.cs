@@ -3,13 +3,38 @@ using Verse;
 
 namespace RimWorldRealFoW.ThingComps {
 	public class CompViewBlockerWatcher : ThingComp {
+		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompViewBlockerWatcher));
+
+		private Map map;
+		private MapComponentSeenFog mapCompSeenFog;
+
+		private bool viewBloker;
+		private Building b;
+
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
-			if (Current.ProgramState == ProgramState.Playing) {
-				// When spawn, if the thing si blocking the view, then trigger a FoV update for everything on the map (if any).
-				if (parent.Map != null) {
-					Building b = parent as Building;
-					if (b != null && !b.CanBeSeenOver()) {
+
+			b = parent as Building;
+
+			if (b != null && !b.CanBeSeenOver()) {
+				viewBloker = true;
+
+				map = parent.Map;
+				mapCompSeenFog = map.GetComponent<MapComponentSeenFog>();
+
+				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
+				
+				int mapSizeZ = map.Size.z;
+				CellRect occupiedRect = b.OccupiedRect();
+				for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
+					for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
+						viewBlockerCells[(z * mapSizeZ) + x] = true;
+					}
+				}
+
+				if (Current.ProgramState == ProgramState.Playing) {
+					// When spawn, if the thing si blocking the view, then trigger a FoV update for everything on the map (if any).
+					if (parent.Map != null) {
 						List<Thing> things = parent.Map.listerThings.AllThings;
 						for (int i = 0; i < things.Count; i++) {
 							ThingWithComps thing = things[i] as ThingWithComps;
@@ -27,11 +52,19 @@ namespace RimWorldRealFoW.ThingComps {
 
 		public override void PostDeSpawn(Map map) {
 			base.PostDeSpawn(map);
+			if (viewBloker) {
+				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
 
-			if (Current.ProgramState == ProgramState.Playing) {
-				// When de-spawn, if the thing was blocking the view, then trigger a FoV update for everything on the map.
-				Building b = parent as Building;
-				if (b != null && !b.CanBeSeenOver()) {
+				int mapSizeZ = map.Size.z;
+				CellRect occupiedRect = b.OccupiedRect();
+				for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
+					for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
+						viewBlockerCells[(z * mapSizeZ) + x] = false;
+					}
+				}
+
+				if (Current.ProgramState == ProgramState.Playing) {
+					// When de-spawn, if the thing was blocking the view, then trigger a FoV update for everything on the map.
 					List<Thing> things = map.listerThings.AllThings;
 					for (int i = 0; i < things.Count; i++) {
 						ThingWithComps thing = things[i] as ThingWithComps;

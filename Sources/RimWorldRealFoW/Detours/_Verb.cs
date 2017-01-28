@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorldRealFoW.ThingComps;
+using RimWorldRealFoW.Utils;
 using Verse;
 
 namespace RimWorldRealFoW.Detours {
@@ -35,7 +36,8 @@ namespace RimWorldRealFoW.Detours {
 		}
 
 		private static bool fovLineOfSight(IntVec3 sourceSq, IntVec3 targetLoc, Thing thing) {
-			CompFieldOfViewWatcher compFoV = thing.TryGetComp<CompFieldOfViewWatcher>();
+			MapComponentSeenFog seenFog = thing.Map.GetComponent<MapComponentSeenFog>();
+			CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
 			// If requires moving, calculate only the base sight.
 			int sightRange = compFoV.calcPawnSightRange(sourceSq, true, !thing.Position.AdjacentToCardinal(sourceSq));
 
@@ -48,7 +50,7 @@ namespace RimWorldRealFoW.Detours {
 			// Limit to needed octant.
 			IntVec3 dir = targetLoc - sourceSq;
 
-			int octant;
+			byte octant;
 			if (dir.x >= 0) {
 				if (dir.z >= 0) {
 					if (dir.x >= dir.z) {
@@ -79,30 +81,18 @@ namespace RimWorldRealFoW.Detours {
 				}
 			}
 
+			bool[] viewBlockerCells = seenFog.viewBlockerCells;
+
+
 			Map map = thing.Map;
 			bool targetFound = false;
 			compFoV.shadowCaster.computeFieldOfViewWithShadowCasting(sourceSq.x, sourceSq.z, sightRange,
-					// isOpaque
-					(int x, int y) => {
-						// Once target found, all other cells are opaque.
-						if (targetFound) {
-							return true;
-						}
-						// Out of map positions are opaques...
-						if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
-							return true;
-						}
-						Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
-						return (b != null && !b.CanBeSeenOver());
-					},
+					seenFog.viewBlockerCells, map.Size.x, map.Size.z,
 					// setFoV
 					(int x, int y) => {
-						if (targetLoc.x == x && targetLoc.z == y) {
-							targetFound = true;
-						}
+						targetFound = true;
 					},
-					octant);
-
+					octant, targetLoc.x, targetLoc.z);
 			return targetFound;
 		}
 	}

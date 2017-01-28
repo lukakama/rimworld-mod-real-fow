@@ -15,7 +15,9 @@ using RimWorld;
 using Verse;
 
 namespace RimWorldRealFoW.ThingComps {
-	class CompHiddenable : ThingComp {
+	public class CompHiddenable : ThingComp {
+		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompHiddenable));
+
 		private IntVec3 lastPosition = IntVec3.Invalid;
 
 		public bool hidden = false;

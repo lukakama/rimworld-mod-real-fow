@@ -16,7 +16,9 @@ using RimWorldRealFoW.Utils;
 using Verse;
 
 namespace RimWorldRealFoW.ThingComps {
-	class CompHideFromPlayer : ThingComp {
+	public class CompHideFromPlayer : ThingComp {
+		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompHideFromPlayer));
+
 		private bool calculated;
 		private IntVec3 lastPosition;
 		

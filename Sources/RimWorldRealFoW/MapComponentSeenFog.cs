@@ -15,6 +15,7 @@ using RimWorld;
 using RimWorldRealFoW.SectionLayers;
 using RimWorldRealFoW.ShadowCasters;
 using RimWorldRealFoW.ThingComps;
+using RimWorldRealFoW.Utils;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace RimWorldRealFoW {
 	class MapComponentSeenFog : MapComponent {
 		public int[] factionsShownCells = null;
 		public bool[] knownCells = null;
+
+		public bool[] viewBlockerCells = null;
 
 		private int maxFactionLoadId;
 
@@ -53,6 +56,7 @@ namespace RimWorldRealFoW {
 
 			factionsShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
 			knownCells = new bool[mapCellLength];
+			viewBlockerCells = new bool[mapCellLength];
 		}
 
 		public override void MapComponentUpdate() {
@@ -65,6 +69,13 @@ namespace RimWorldRealFoW {
 		}
 
 		public int getBaseIdx(Faction faction) {
+			if (maxFactionLoadId < faction.loadID) {
+				maxFactionLoadId = faction.loadID;
+				int[] newFactionShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
+				Array.Copy(factionsShownCells, newFactionShownCells, factionsShownCells.Length);
+				factionsShownCells = newFactionShownCells;
+			}
+
 			return faction.loadID * mapCellLength;
 		}
 
@@ -80,11 +91,12 @@ namespace RimWorldRealFoW {
 		}
 
 		public bool isShown(Faction faction, IntVec3 cell) {
-			return factionsShownCells[resolveIdx(faction, (cell.z * mapSizeX) + cell.x)] != 0;
+			return isShown(faction, cell.x, cell.z);
 		}
 		
 		public bool isShown(Faction faction, int x, int z) {
-			return factionsShownCells[resolveIdx(faction, (z * mapSizeX) + x)] != 0;
+			int resIdx = resolveIdx(faction, (z * mapSizeX) + x);
+			return factionsShownCells[resIdx] != 0;
 		}
 
 		private void init() {
@@ -94,21 +106,15 @@ namespace RimWorldRealFoW {
 				ShadowCaster shadowCaster = new ShadowCaster();
 				shadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfViewWatcher.NON_MECH_DEFAULT_RANGE),
 					// isOpaque
-					(int x, int y) => {
-						if (x < 0 || y < 0 || x >= map.Size.x || y >= map.Size.z) {
-							return true;
-						}
-						Building b = map.edificeGrid[map.cellIndices.CellToIndex(x, y)];
-						return (b != null && !b.CanBeSeenOver());
-					},
+					viewBlockerCells, map.Size.x, map.Size.z,
 					// setFoV
 					(int x, int y) => {
 						if (!knownCells[map.cellIndices.CellToIndex(x, y)]) {
 							IntVec3 cell = new IntVec3(x, 0, y);
 							knownCells[map.cellIndices.CellToIndex(x, y)] = true;
 
-							foreach (Thing t in map.thingGrid.ThingsAt(cell)) {
-								CompHideFromPlayer comp = t.TryGetComp<CompHideFromPlayer>();
+							foreach (Thing t in map.thingGrid.ThingsListAtFast(cell)) {
+								CompHideFromPlayer comp = (CompHideFromPlayer) t.TryGetComp(CompHideFromPlayer.COMP_DEF);
 								if (comp != null) {
 									comp.forceSeen();
 								}
@@ -119,8 +125,8 @@ namespace RimWorldRealFoW {
 
 			// Update all thing FoV and visibility.
 			foreach (Thing thing in map.listerThings.AllThings) {
-				CompFieldOfViewWatcher compFoV = thing.TryGetComp<CompFieldOfViewWatcher>();
-				CompHideFromPlayer compVisibility = thing.TryGetComp<CompHideFromPlayer>();
+				CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
+				CompHideFromPlayer compVisibility = (CompHideFromPlayer) thing.TryGetComp(CompHideFromPlayer.COMP_DEF);
 				if (compFoV != null) {
 					compFoV.updateFoV();
 				}
@@ -150,7 +156,7 @@ namespace RimWorldRealFoW {
 			FloodFillerFog.FloodUnfog(map.mapPawns.FreeColonistsSpawned.RandomElement<Pawn>().Position, map);
 
 			foreach (Thing thing in map.listerThings.AllThings) {
-				CompFieldOfViewWatcher comp = thing.TryGetComp<CompFieldOfViewWatcher>();
+				CompFieldOfViewWatcher comp = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
 				if (comp != null) {
 					comp.updateFoV();
 				}
@@ -158,7 +164,8 @@ namespace RimWorldRealFoW {
 		}
 
 		public void incrementSeen(Faction faction, int idx) {
-			if ((++factionsShownCells[resolveIdx(faction, idx)] == 1) && faction.IsPlayer) {
+			int resIdx = resolveIdx(faction, idx);
+			if ((++factionsShownCells[resIdx] == 1) && faction.IsPlayer) {
 				IntVec3 cell = CellIndicesUtility.IndexToCell(idx, mapSizeX, mapSizeZ);
 
 				if (!knownCells[idx]) {
@@ -182,7 +189,7 @@ namespace RimWorldRealFoW {
 				CompHideFromPlayer comp;
 				int thingsCount = things.Count;
 				for (int i = 0; i < thingsCount; i++) {
-					comp = things[i].TryGetComp<CompHideFromPlayer>();
+					comp = (CompHideFromPlayer) things[i].TryGetComp(CompHideFromPlayer.COMP_DEF);
 					if (comp != null) {
 						comp.updateVisibility(true);
 					}
@@ -191,7 +198,8 @@ namespace RimWorldRealFoW {
 		}
 
 		public void decrementSeen(Faction faction, int idx) {
-			if ((--factionsShownCells[resolveIdx(faction, idx)] == 0) && faction.IsPlayer) {
+			int resIdx = resolveIdx(faction, idx);
+			if ((--factionsShownCells[resIdx] == 0) && faction.IsPlayer) {
 				IntVec3 cell = CellIndicesUtility.IndexToCell(idx, mapSizeX, mapSizeZ);
 
 				if (initialized) {
@@ -202,7 +210,7 @@ namespace RimWorldRealFoW {
 				CompHideFromPlayer comp;
 				int thingsCount = things.Count;
 				for (int i = 0; i < thingsCount; i++) {
-					comp = things[i].TryGetComp<CompHideFromPlayer>();
+					comp = (CompHideFromPlayer) things[i].TryGetComp(CompHideFromPlayer.COMP_DEF);
 					if (comp != null) {
 						comp.updateVisibility(true);
 					}

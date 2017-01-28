@@ -22,6 +22,8 @@ using Verse.AI;
 
 namespace RimWorldRealFoW.ThingComps {
 	class CompFieldOfViewWatcher : ThingComp {
+		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompFieldOfViewWatcher));
+
 		public static readonly float NON_MECH_DEFAULT_RANGE = 32f;
 		public static readonly float MECH_DEFAULT_RANGE = 40f;
 
@@ -194,7 +196,9 @@ namespace RimWorldRealFoW.ThingComps {
 
 				Log.Message("Benchmark: " + sw.ElapsedMilliseconds);
 
-				// Took ~1030ms on a Core i5 2500 in a worst case scenario (2 open areas): ~0.25ms per computation.
+				// Took ~1400ms on a Core i5 2500 in a worst case scenario using a local reference map: 2 open areas, far view, computed 4000 times each
+				// with vision cleaning on each computation.
+				// Result in ~0.35ms per raw field of view computation.At 60 fps, a frame is rendered in ~16.67ms, so max ~50 player's pawns for 60 fps.
 			}
 		}
 
@@ -393,28 +397,23 @@ namespace RimWorldRealFoW.ThingComps {
 			if (!shouldMove && !sleeping && (pawnPather == null || !pawnPather.MovingNow)) {
 				Verb verb = pawn.TryGetAttackVerb(true);
 				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight && verb.ownerEquipment.def.IsRangedWeapon) {
-					bool canLookForTarget = false;
 					if (pawn.CurJob != null) {
 						JobDef jobDef = pawn.CurJob.def;
 						if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
-							canLookForTarget = true;
-						}
-					}
+							float weaponRange = verb.verbProps.range;
+							if (baseViewRange < weaponRange) {
+								int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;
 
-					if (canLookForTarget) {
-						float weaponRange = verb.verbProps.range;
-						if (baseViewRange < weaponRange) {
-							int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;
+								float statValue = pawn.GetStatValue(StatDefOf.AimingDelayFactor, true);
+								int ticksToSearch = (verb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((weaponRange - baseViewRange) / 2);
 
-							float statValue = pawn.GetStatValue(StatDefOf.AimingDelayFactor, true);
-							int ticksToSearch = (verb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((weaponRange - baseViewRange) / 2);
+								if (ticksStanding >= ticksToSearch) {
+									sightRange = verb.verbProps.range * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+								} else {
+									int incValue = Mathf.RoundToInt((verb.verbProps.range - baseViewRange) * ((float) ticksStanding / ticksToSearch));
 
-							if (ticksStanding >= ticksToSearch) {
-								sightRange = verb.verbProps.range * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
-							} else {
-								int incValue = Mathf.RoundToInt((verb.verbProps.range - baseViewRange) * ((float) ticksStanding / ticksToSearch));
-
-								sightRange = (baseViewRange + incValue) * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+									sightRange = (baseViewRange + incValue) * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+								}
 							}
 						}
 					}
@@ -466,7 +465,7 @@ namespace RimWorldRealFoW.ThingComps {
 					}
 				}
 
-				if (!position.Roofed(map)) {
+				if (!map.roofGrid.Roofed(position.x, position.z)) {
 					float weatherFactor = map.weatherManager.CurWeatherAccuracyMultiplier;
 					if (weatherFactor != 1f) {
 						// Weather factor is applied by half.
@@ -497,6 +496,7 @@ namespace RimWorldRealFoW.ThingComps {
 			// Local references (C# is slow to access fields...).
 			Map map = this.map;
 			int mapSizeX = map.Size.x;
+			int mapSizeZ = map.Size.z;
 
 			bool[] viewMap = this.viewMap;
 			bool[] newViewMap = this.newViewMap;
@@ -506,6 +506,8 @@ namespace RimWorldRealFoW.ThingComps {
 			CellIndices cellIndices = map.cellIndices;
 
 			IntVec3 position = thing.Position;
+			IntVec2 size = thing.def.size;
+			Rot4 rotation = thing.Rotation;
 
 			Faction faction = parent.Faction;
 
@@ -518,10 +520,10 @@ namespace RimWorldRealFoW.ThingComps {
 			newViewRect.maxZ = Math.Max(position.z + intRadius + peekMod, occupedRect.maxZ);
 			newViewRect.minZ = Math.Min(position.z - intRadius - peekMod, occupedRect.minZ);
 
-			var newViewRectMinX = newViewRect.minX;
-			var newViewRectMaxX = newViewRect.maxX;
-			var newViewRectMinZ = newViewRect.minZ;
-			var newViewRectMaxZ = newViewRect.maxZ;
+			int newViewRectMinX = newViewRect.minX;
+			int newViewRectMaxX = newViewRect.maxX;
+			int newViewRectMinZ = newViewRect.minZ;
+			int newViewRectMaxZ = newViewRect.maxZ;
 
 			int newViewWidth = newViewRect.Width;
 			int newViewArea = newViewRect.Area;
@@ -536,11 +538,11 @@ namespace RimWorldRealFoW.ThingComps {
 				}
 			}
 
-			var viewRectMinZ = viewRect.minZ;
-			var viewRectMaxZ = viewRect.maxZ;
-			var viewRectMinX = viewRect.minX;
-			var viewRectMaxX = viewRect.maxX;
-			
+			int viewRectMinZ = viewRect.minZ;
+			int viewRectMaxZ = viewRect.maxZ;
+			int viewRectMinX = viewRect.minX;
+			int viewRectMaxX = viewRect.maxX;
+
 			int viewWidth = viewRect.Width;
 			int viewArea = viewRect.Area;
 
@@ -551,55 +553,50 @@ namespace RimWorldRealFoW.ThingComps {
 					// Mark as seen only new cells.
 					if (x < viewRectMinX || z < viewRectMinZ || x > viewRectMaxX || z > viewRectMaxZ || viewMap.Length == 0 ||
 							!viewMap[CellIndicesUtility.CellToIndex(x - viewRectMinX, z - viewRectMinZ, viewWidth)]) {
-						mapCompSeenFog.incrementSeen(faction, CellIndicesUtility.CellToIndex(x, z, mapSizeX));
+						mapCompSeenFog.incrementSeen(faction, (z * mapSizeX) + x);
 					}
 				}
 			}
 
 			// Calculate Field of View (if necessary).
 			if (intRadius > 0) {
+
+				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
+
 				int viewPositionsCount;
-				viewPositions[0] = thing.Position;
+				viewPositions[0] = position;
 
 				if (!peek) {
 					viewPositionsCount = 1;
 				} else {
 					viewPositionsCount = 5;
 					for (int i = 0; i < 4; i++) {
-						viewPositions[1 + i] = thing.Position + GenAdj.CardinalDirections[i];
+						viewPositions[1 + i] = position + GenAdj.CardinalDirections[i];
 					}
 				}
-
 				int mapWitdh = map.Size.x - 1;
 				int mapHeight = map.Size.z - 1;
-				Building b;
+
+				IntVec3 viewPosition;
 				for (int i = 0; i < viewPositionsCount; i++) {
-					IntVec3 viewPosition = viewPositions[i];
-					if (viewPosition.IsInside(thing) || viewPosition.CanBeSeenOver(map)) {
-						if (intRadius != 0) {
-							shadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
-								// isOpaque
-								delegate (int x, int z) {
-									// Out of map positions are opaques...
-									if (x <= 0 || z <= 0 || x >= mapWitdh || z >= mapHeight) {
-										return true;
+					viewPosition = viewPositions[i];
+
+					if (viewPosition.x >= 0 && viewPosition.z >= 0 && viewPosition.x <= mapWitdh && viewPosition.z <= mapHeight &&
+								(i == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[cellIndices.CellToIndex(viewPosition.x, viewPosition.z)])) {
+						shadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+							viewBlockerCells, mapSizeX, mapSizeZ,
+							// setFoV
+							delegate (int x, int z) {
+								int newIdx = CellIndicesUtility.CellToIndex(x - newViewRectMinX, z - newViewRectMinZ, newViewWidth);
+								if (!newViewMap[newIdx]) {
+									newViewMap[newIdx] = true;
+									// Mark as seen only new cells.
+									if (x < viewRectMinX || z < viewRectMinZ || x > viewRectMaxX || z > viewRectMaxZ || viewMap.Length == 0 ||
+											!viewMap[CellIndicesUtility.CellToIndex(x - viewRectMinX, z - viewRectMinZ, viewWidth)]) {
+										mapCompSeenFog.incrementSeen(faction, (z * mapSizeX) + x);
 									}
-									b = edificeGrid[cellIndices.CellToIndex(x, z)];
-									return (b != null && !b.CanBeSeenOver());
-								},
-								// setFoV
-								delegate (int x, int z) {
-									int newIdx = CellIndicesUtility.CellToIndex(x - newViewRectMinX, z - newViewRectMinZ, newViewWidth);
-									if (!newViewMap[newIdx]) {
-										newViewMap[newIdx] = true;
-										// Mark as seen only new cells.
-										if (x < viewRectMinX || z < viewRectMinZ || x > viewRectMaxX || z > viewRectMaxZ || viewMap.Length == 0 ||
-												!viewMap[CellIndicesUtility.CellToIndex(x - viewRectMinX, z - viewRectMinZ, viewWidth)]) {
-											mapCompSeenFog.incrementSeen(faction, CellIndicesUtility.CellToIndex(x, z, mapSizeX));
-										}
-									}
-								});
-						}
+								}
+							});
 					}
 				}
 			}
@@ -614,7 +611,7 @@ namespace RimWorldRealFoW.ThingComps {
 						z = viewRectMinZ + (i / viewWidth);
 						if (x < newViewRectMinX || z < newViewRectMinZ || x > newViewRectMaxX || z > newViewRectMaxZ ||
 								!newViewMap[CellIndicesUtility.CellToIndex(x - newViewRectMinX, z - newViewRectMinZ, newViewWidth)]) {
-							mapCompSeenFog.decrementSeen(faction, CellIndicesUtility.CellToIndex(x, z, mapSizeX));
+							mapCompSeenFog.decrementSeen(faction, (z * mapSizeX) + x);
 						}
 					}
 				}
@@ -640,7 +637,7 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 
 			if (viewRect.maxX >= 0 && viewRect.minX >= 0 && viewRect.maxZ >= 0 && viewRect.minZ >= 0 && viewMap.Length > 0) {
-				var mapX = map.Size.x;
+				int mapX = map.Size.x;
 
 				int viewWidth = viewRect.Width;
 				int viewArea = viewRect.Area;

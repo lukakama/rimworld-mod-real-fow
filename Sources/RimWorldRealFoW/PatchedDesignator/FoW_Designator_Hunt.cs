@@ -1,5 +1,6 @@
 ﻿using RimWorld;
 using RimWorldRealFoW.ThingComps;
+using RimWorldRealFoW.Utils;
 using Verse;
 
 namespace RimWorldRealFoW.Detours.PatchedDesignators {
@@ -15,7 +16,7 @@ namespace RimWorldRealFoW.Detours.PatchedDesignators {
 		}
 
 		public override AcceptanceReport CanDesignateThing(Thing t) {
-			CompHiddenable cmp = t.TryGetComp<CompHiddenable>();
+			CompHiddenable cmp = (CompHiddenable) t.TryGetComp(CompHiddenable.COMP_DEF);
 			if (cmp != null && cmp.hidden) {
 				return false;
 			}

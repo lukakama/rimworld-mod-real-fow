@@ -30,31 +30,31 @@ namespace RimWorldRealFoW {
 			// NO-OP (here for future uses)
 		}
 
+
 		public RealFoWModStarter() {
 			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init.", false, null);
 			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init..", false, null);
 		}
 
 		public static void injectComponents() {
-			CompProperties comPropsFieldOfView = new CompProperties(typeof(CompFieldOfViewWatcher));
-			CompProperties comPropsHiddenable = new CompProperties(typeof(CompHiddenable));
-			CompProperties comPropsHideFromPlayer = new CompProperties(typeof(CompHideFromPlayer));
-			CompProperties comPropsViewBlockerWatcher = new CompProperties(typeof(CompViewBlockerWatcher));
-			
-
 			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs) {
 				// Patch motes
 				if (typeof(MoteBubble) == def.thingClass) {
 					def.thingClass = typeof(FoW_MoteBubble);
 				}
 
-				// FoW components don't care about motes.
-				if (!typeof(Mote).IsAssignableFrom(def.thingClass)) {
-					addComponent(def, comPropsHiddenable);
-					addComponent(def, comPropsFieldOfView);
-					addComponent(def, comPropsHideFromPlayer);
-					addComponent(def, comPropsViewBlockerWatcher);
-					Log.Message("Injected components to " + def + ".");
+				if (typeof(ThingWithComps).IsAssignableFrom(def.thingClass)
+						&& !typeof(Mote).IsAssignableFrom(def.thingClass)) {
+					if (typeof(Building).IsAssignableFrom(def.thingClass) 
+							|| typeof(Pawn).IsAssignableFrom(def.thingClass)) {
+						addComponent(def, CompFieldOfViewWatcher.COMP_DEF);
+					}
+					if (typeof(Building).IsAssignableFrom(def.thingClass)) {
+						addComponent(def, CompViewBlockerWatcher.COMP_DEF);
+					}
+
+					addComponent(def, CompHiddenable.COMP_DEF);
+					addComponent(def, CompHideFromPlayer.COMP_DEF);
 				}
 			}
 

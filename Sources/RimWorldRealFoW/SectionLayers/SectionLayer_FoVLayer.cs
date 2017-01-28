@@ -25,7 +25,6 @@ namespace RimWorldRealFoW.SectionLayers {
 
 
 		private MapComponentSeenFog pawnFog;
-		private Map map;
 		
 		public static MapMeshFlag mapMeshFlag = MapMeshFlag.None;
 
@@ -119,10 +118,6 @@ namespace RimWorldRealFoW.SectionLayers {
 		}
 
 		public override void Regenerate() {
-			if (map != section.map) {
-				map = section.map;
-				pawnFog = base.Map.GetComponent<MapComponentSeenFog>();
-			}
 			if (pawnFog == null) {
 				pawnFog = base.Map.GetComponent<MapComponentSeenFog>();
 			}
@@ -131,13 +126,14 @@ namespace RimWorldRealFoW.SectionLayers {
 				LayerSubMesh subMesh = base.GetSubMesh(MatBases.FogOfWar);
 				bool firstGeneration;
 				if (subMesh.mesh.vertexCount == 0) {
+					firstGeneration = true;
+
 					subMesh.mesh.MarkDynamic();
 
 					MakeBaseGeometry(this.section, subMesh, AltitudeLayer.FogOfWar);
 
 					//subMesh.colors = new List<Color32>(subMesh.mesh.vertexCount);
 
-					firstGeneration = true;
 					if (prefEnableFade) {
 						targetAlphas = new byte[subMesh.mesh.vertexCount];
 						alphaChangeTick = new long[subMesh.mesh.vertexCount];
@@ -149,19 +145,21 @@ namespace RimWorldRealFoW.SectionLayers {
 
 				int colorIdx = 0;
 
-				bool[] fogGrid = map.fogGrid.fogGrid;
-				int[] factionsShownGrid = pawnFog.factionsShownCells;
+				bool[] fogGrid = base.Map.fogGrid.fogGrid;
 				int baseIdx = pawnFog.getBaseIdx(Faction.OfPlayer);
+				int[] factionsShownGrid = pawnFog.factionsShownCells;
 
 				bool[] knownGrid = pawnFog.knownCells;
 
+				int mapSizeX = base.Map.Size.x;
+
 				CellRect cellRect = this.section.CellRect;
 				int mapHeight = base.Map.Size.z - 1;
-				int mapWidth = base.Map.Size.x - 1;
-
+				int mapWidth = mapSizeX - 1;
+				
+				
 				bool hasFoggedVerts = false;
 				long fogTransitionTick = Find.TickManager.TicksGame * prefFadeSpeedMult;
-				CellIndices cellIndices = base.Map.cellIndices;
 
 				int cellIdx;
 				int cellIdxN;
@@ -179,7 +177,7 @@ namespace RimWorldRealFoW.SectionLayers {
 				byte alpha;
 				for (int x = cellRect.minX; x <= cellRect.maxX; x++) {
 					for (int z = cellRect.minZ; z <= cellRect.maxZ; z++) {
-						cellIdx = cellIndices.CellToIndex(x, z);
+						cellIdx = z * mapSizeX + x;
 						if (!fogGrid[cellIdx]) {
 							if (factionsShownGrid[baseIdx + cellIdx] == 0) {
 								cellKnown = knownGrid[cellIdx];
@@ -188,14 +186,14 @@ namespace RimWorldRealFoW.SectionLayers {
 									this.vertsSeen[n] = cellKnown;
 								}
 								if (cellKnown) {
-									cellIdxN = cellIndices.CellToIndex(x, z + 1);
-									cellIdxS = cellIndices.CellToIndex(x, z - 1);
-									cellIdxE = cellIndices.CellToIndex(x + 1, z);
-									cellIdxW = cellIndices.CellToIndex(x - 1, z);
-									cellIdxSW = cellIndices.CellToIndex(x - 1, z - 1);
-									cellIdxNW = cellIndices.CellToIndex(x - 1, z + 1);
-									cellIdxNE = cellIndices.CellToIndex(x + 1, z + 1);
-									cellIdxSE = cellIndices.CellToIndex(x + 1, z - 1);
+									cellIdxN = (z + 1) * mapSizeX + x;
+									cellIdxS = (z - 1) * mapSizeX + x;
+									cellIdxE = z * mapSizeX + (x + 1);
+									cellIdxW = z * mapSizeX + (x - 1);
+									cellIdxSW = (z - 1) * mapSizeX + (x - 1);
+									cellIdxNW = (z + 1) * mapSizeX + (x - 1);
+									cellIdxNE = (z + 1) * mapSizeX + (x + 1);
+									cellIdxSE = (z - 1) * mapSizeX + (x + 1);
 
 									if (z < mapHeight && !knownGrid[cellIdxN]) {
 										this.vertsSeen[2] = false;
@@ -236,14 +234,14 @@ namespace RimWorldRealFoW.SectionLayers {
 									this.vertsSeen[l] = false;
 								}
 
-								cellIdxN = cellIndices.CellToIndex(x, z + 1);
-								cellIdxS = cellIndices.CellToIndex(x, z - 1);
-								cellIdxE = cellIndices.CellToIndex(x + 1, z);
-								cellIdxW = cellIndices.CellToIndex(x - 1, z);
-								cellIdxSW = cellIndices.CellToIndex(x - 1, z - 1);
-								cellIdxNW = cellIndices.CellToIndex(x - 1, z + 1);
-								cellIdxNE = cellIndices.CellToIndex(x + 1, z + 1);
-								cellIdxSE = cellIndices.CellToIndex(x + 1, z - 1);
+								cellIdxN = (z + 1) * mapSizeX + x;
+								cellIdxS = (z - 1) * mapSizeX + x;
+								cellIdxE = z * mapSizeX + (x + 1);
+								cellIdxW = z * mapSizeX + (x - 1);
+								cellIdxSW = (z - 1) * mapSizeX + (x - 1);
+								cellIdxNW = (z + 1) * mapSizeX + (x - 1);
+								cellIdxNE = (z + 1) * mapSizeX + (x + 1);
+								cellIdxSE = (z - 1) * mapSizeX + (x + 1);
 
 								if (z < mapHeight && factionsShownGrid[baseIdx + cellIdxN] == 0) {
 									adjCellKnown = knownGrid[cellIdxN];
@@ -357,7 +355,6 @@ namespace RimWorldRealFoW.SectionLayers {
 
 				bool alphaUpdated = false;
 
-				LayerSubMesh subMesh = base.GetSubMesh(MatBases.FogOfWar);
 				bool hasFoggedVerts = false;
 
 				Color32[] colors = meshColors;
@@ -381,6 +378,8 @@ namespace RimWorldRealFoW.SectionLayers {
 					}
 				}
 				if (alphaUpdated) {
+					LayerSubMesh subMesh = base.GetSubMesh(MatBases.FogOfWar);
+
 					if (hasFoggedVerts) {
 						subMesh.disabled = false;
 						subMesh.mesh.colors32 = colors;

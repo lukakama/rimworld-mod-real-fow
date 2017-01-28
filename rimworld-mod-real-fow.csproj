@@ -97,7 +97,7 @@
     <Compile Include="Sources\RimWorldRealFoW\Detours\Detours.cs" />
     <Compile Include="Sources\RimWorldRealFoW\SectionLayers\SectionLayer_FoVLayer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ShadowCasters\ShadowCaster.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\RimWorldRealFoW.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\RealFoWModStarter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Verb.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Messages.cs" />
