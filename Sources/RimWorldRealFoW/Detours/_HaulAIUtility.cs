@@ -13,7 +13,7 @@ namespace RimWorldRealFoW.Detours {
 			StoragePriority currentPriority = HaulAIUtility.StoragePriorityAtFor(t.Position, t);
 			IntVec3 storeCell;
 			if (!StoreUtility.TryFindBestBetterStoreCellFor(t, p, p.Map, currentPriority, p.Faction, out storeCell, true)) {
-				JobFailReason.Is(ReflectionUtils.getInstancePrivateValue<string>(typeof(HaulAIUtility), "NoEmptyPlaceLowerTrans"));
+				JobFailReason.Is(ReflectionUtils.getStaticPrivateValue<string>(typeof(HaulAIUtility), "NoEmptyPlaceLowerTrans"));
 				return null;
 			}
 			return HaulAIUtility.HaulMaxNumToCellJob(p, t, storeCell, false);
