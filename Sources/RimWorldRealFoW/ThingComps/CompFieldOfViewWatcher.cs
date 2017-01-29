@@ -36,10 +36,12 @@ namespace RimWorldRealFoW.ThingComps {
 
 		private float baseViewRange;
 		
-		private bool[] viewMap;
+		private bool[] viewMap1;
+		private bool[] viewMap2;
+
 		private CellRect viewRect;
-		private bool[] newViewMap;
-		private CellRect newViewRect;
+
+		private bool viewMapSwitch = false;
 
 		private IntVec3[] viewPositions;
 
@@ -91,11 +93,10 @@ namespace RimWorldRealFoW.ThingComps {
 			lastSightRange = 0;
 			lastIsPeeking = false;
 
-			viewMap = new bool[0];
-			viewRect = new CellRect(-1, -1, 0, 0);
+			viewMap1 = new bool[0];
+			viewMap2 = new bool[0];
 
-			newViewMap = new bool[0];
-			newViewRect = new CellRect(-1, -1, 0, 0);
+			viewRect = new CellRect(-1, -1, 0, 0);
 
 			viewPositions = new IntVec3[5];
 			
@@ -147,7 +148,7 @@ namespace RimWorldRealFoW.ThingComps {
 			updateFoV();
 		}
 
-		private bool doBenchmark = false;
+		private bool doBenchmark = true;
 		private bool benchmarkPerformed = false;
 
 		public override void CompTick() {
@@ -482,45 +483,38 @@ namespace RimWorldRealFoW.ThingComps {
 			//	Log.Message("calculateFoV: " + thing.ThingID);
 			//}
 
-			// Local references (C# is slow to access fields...).
-			Map map = this.map;
 			int mapSizeX = map.Size.x;
 			int mapSizeZ = map.Size.z;
 
-			bool[] viewMap = this.viewMap;
-			bool[] newViewMap = this.newViewMap;
-			IntVec3[] viewPositions = this.viewPositions;
+			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
+			bool[] newViewMap = viewMapSwitch ? this.viewMap2 : this.viewMap1;
 
 			EdificeGrid edificeGrid = map.edificeGrid;
 			CellIndices cellIndices = map.cellIndices;
 
 			IntVec3 position = thing.Position;
-			IntVec2 size = thing.def.size;
-			Rot4 rotation = thing.Rotation;
-
 			Faction faction = parent.Faction;
 
 			int peekMod = (peek ? 1 : 0);
 
 			// Calculate new view rect.
 			CellRect occupedRect = thing.OccupiedRect();
-			newViewRect.maxX = Math.Max(position.x + intRadius + peekMod, occupedRect.maxX);
-			newViewRect.minX = Math.Min(position.x - intRadius - peekMod, occupedRect.minX);
-			newViewRect.maxZ = Math.Max(position.z + intRadius + peekMod, occupedRect.maxZ);
-			newViewRect.minZ = Math.Min(position.z - intRadius - peekMod, occupedRect.minZ);
+			int newViewRectMinX = Math.Min(position.x - intRadius - peekMod, occupedRect.minX);
+			int newViewRectMaxX = Math.Max(position.x + intRadius + peekMod, occupedRect.maxX);
+			int newViewRectMinZ = Math.Min(position.z - intRadius - peekMod, occupedRect.minZ);
+			int newViewRectMaxZ = Math.Max(position.z + intRadius + peekMod, occupedRect.maxZ);
 
-			int newViewRectMinX = newViewRect.minX;
-			int newViewRectMaxX = newViewRect.maxX;
-			int newViewRectMinZ = newViewRect.minZ;
-			int newViewRectMaxZ = newViewRect.maxZ;
-
-			int newViewWidth = newViewRect.Width;
-			int newViewArea = newViewRect.Area;
+			int newViewWidth = newViewRectMaxX - newViewRectMinX + 1;
+			int newViewArea = newViewWidth * (newViewRectMaxZ - newViewRectMinZ + 1);
 
 			// Clear or reset the new view map.
 			if (newViewMap.Length < newViewArea) {
 				newViewMap = new bool[newViewArea];
-				this.newViewMap = newViewMap;
+				if (viewMapSwitch) {
+					this.viewMap2 = newViewMap;
+				} else {
+					this.viewMap1 = newViewMap;
+				}
 			} else {
 				for (int i = 0; i < newViewArea; i++) {
 					newViewMap[i] = false;
@@ -606,12 +600,8 @@ namespace RimWorldRealFoW.ThingComps {
 				}
 			}
 
-			// Update the view area.
-			if (viewMap.Length < newViewArea) {
-				viewMap = new bool[newViewArea];
-				this.viewMap = viewMap;
-			}
-			Buffer.BlockCopy(newViewMap, 0, viewMap, 0, sizeof(byte) * newViewArea);
+			// Use te new view area.
+			viewMapSwitch = !viewMapSwitch;
 
 			// Update the view rect.
 			viewRect.maxX = newViewRectMaxX;
@@ -624,6 +614,7 @@ namespace RimWorldRealFoW.ThingComps {
 			if (faction == null) {
 				faction = parent.Faction;
 			}
+			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
 
 			if (viewRect.maxX >= 0 && viewRect.minX >= 0 && viewRect.maxZ >= 0 && viewRect.minZ >= 0 && viewMap.Length > 0) {
 				int mapX = map.Size.x;
