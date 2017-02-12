@@ -7,7 +7,7 @@ namespace RimWorldRealFoW.PatchedDesignators {
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c) {
 			AcceptanceReport baseReport = base.CanDesignateCell(c);
-			
+
 			if (baseReport.Accepted) {
 				CellRect cellRect = GenAdj.OccupiedRect(c, this.placingRot, this.PlacingDef.Size);
 				MapComponentSeenFog seenFog = base.Map.getMapComponentSeenFog();

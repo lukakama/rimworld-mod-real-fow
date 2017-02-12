@@ -14,9 +14,12 @@
 using RimWorld;
 using RimWorld.Planet;
 using RimWorldRealFoW.Detours;
+using RimWorldRealFoW.PatchedDesignators;
 using RimWorldRealFoW.PatchedThings;
 using RimWorldRealFoW.ThingComps;
+using RimWorldRealFoW.Utils;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -57,23 +60,43 @@ namespace RimWorldRealFoW {
 					addComponent(def, CompHideFromPlayer.COMP_DEF);
 				}
 			}
+		}
 
+		public static void patchDesignators() {
 			// Patch designators
+			long patchedDesignators = 0;
+			long totDesignators = 0;
+
 			foreach (DesignationCategoryDef def in DefDatabase<DesignationCategoryDef>.AllDefs) {
-				bool patched = false;
-				for (int i = 0; i < def.specialDesignatorClasses.Count; i++) {
-					Type originalType = def.specialDesignatorClasses[i];
+				List<Designator> resolvedDesignators = ReflectionUtils.getInstancePrivateValue<List<Designator>>(def, "resolvedDesignators");
+
+				for (int i = 0; i < resolvedDesignators.Count; i++) {
+					totDesignators++;
+
+					Type originalType = resolvedDesignators[i].GetType();
 					Type patchedType = Type.GetType("RimWorldRealFoW.PatchedDesignators.FoW_" + originalType.Name, false);
-					if (patchedType != null) {
-						def.specialDesignatorClasses[i] = patchedType;
-						patched = true;
-						Log.Message("Patched designator from " + originalType + " to " + patchedType + ".");
+
+					if (originalType == typeof(Designator_Build)) {
+						Designator_Build des = (Designator_Build) resolvedDesignators[i];
+						resolvedDesignators[i] = new FoW_Designator_Build(ReflectionUtils.getInstancePrivateValue<BuildableDef>(des, "entDef"));
+
+						patchedDesignators++;
+					} else if (originalType == typeof(Designator_Install)) {
+						Designator_Install des = (Designator_Install) resolvedDesignators[i];
+						resolvedDesignators[i] = new FoW_Designator_Install {
+							hotKey = des.hotKey
+						};
+
+						patchedDesignators++;
+					} else if (patchedType != null) {
+						resolvedDesignators[i] = (Designator) Activator.CreateInstance(patchedType);
+
+						patchedDesignators++;
 					}
 				}
-				if (patched) {
-					def.ResolveReferences();
-				}
 			}
+
+			Log.Message("Patched " + patchedDesignators + " designators on " + totDesignators + ".");
 		}
 
 		public static void addComponent(ThingDef def, CompProperties compProperties) {
@@ -92,7 +115,6 @@ namespace RimWorldRealFoW {
 			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
 			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
 
-			detour(typeof(DesignationCategoryDef), typeof(_DesignationCategoryDef), "ResolveDesignators");
 			detour(typeof(InstallationDesignatorDatabase), typeof(_InstallationDesignatorDatabase), "NewDesignatorFor");
 
 			detour(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");

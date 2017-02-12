@@ -55,10 +55,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_InstallationDesignatorDatabase.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_DesignationCategoryDef.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_EnvironmentInspectDrawer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_HaulAIUtility.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_InstallationDesignatorDatabase.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Install.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Build.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompProvideVision.cs" />

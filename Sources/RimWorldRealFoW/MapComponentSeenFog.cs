@@ -72,6 +72,10 @@ namespace RimWorldRealFoW {
 			if (!initialized) {
 				initialized = true;
 				init();
+
+				// Some mods (Allows Tools) inject designators at play time and not at mod initialization time.
+				// So we need to patch them here.
+				RealFoWModStarter.patchDesignators();
 			}
 		}
 
