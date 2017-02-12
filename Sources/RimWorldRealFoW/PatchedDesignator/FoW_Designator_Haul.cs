@@ -3,7 +3,7 @@ using RimWorldRealFoW.ThingComps;
 using RimWorldRealFoW.Utils;
 using Verse;
 
-namespace RimWorldRealFoW.Detours.PatchedDesignators {
+namespace RimWorldRealFoW.PatchedDesignators {
 	class FoW_Designator_Haul : Designator_Haul {
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c) {

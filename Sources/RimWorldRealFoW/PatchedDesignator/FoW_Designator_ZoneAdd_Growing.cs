@@ -2,7 +2,7 @@
 using RimWorldRealFoW.Utils;
 using Verse;
 
-namespace RimWorldRealFoW.Detours.PatchedDesignators {
+namespace RimWorldRealFoW.PatchedDesignators {
 	class FoW_Designator_ZoneAdd_Growing : Designator_ZoneAdd_Growing {
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c) {
