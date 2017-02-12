@@ -32,8 +32,8 @@ namespace RimWorldRealFoW {
 
 
 		public RealFoWModStarter() {
-			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init.", false, null);
-			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init..", false, null);
+			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init.", false, null);
+			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init..", false, null);
 		}
 
 		public static void injectComponents() {
@@ -83,7 +83,6 @@ namespace RimWorldRealFoW {
 		}
 
 		public static void injectDetours() {
-			detour(typeof(GenConstruct), typeof(_GenConstruct), "CanPlaceBlueprintAt");
 			detour(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
 			detour(typeof(Selector), typeof(_Selector), "Select");
 			detour(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
@@ -92,6 +91,9 @@ namespace RimWorldRealFoW {
 			detour(typeof(SectionLayer_Things), typeof(_SectionLayer_Things), "Regenerate");
 			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
 			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
+
+			detour(typeof(DesignationCategoryDef), typeof(_DesignationCategoryDef), "ResolveDesignators");
+			detour(typeof(InstallationDesignatorDatabase), typeof(_InstallationDesignatorDatabase), "NewDesignatorFor");
 
 			detour(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
 			

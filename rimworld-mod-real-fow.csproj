@@ -55,8 +55,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_InstallationDesignatorDatabase.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_DesignationCategoryDef.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_EnvironmentInspectDrawer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_HaulAIUtility.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Install.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Build.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompProvideVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompAffectVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\Properties\CompProperties_AffectVision.cs" />
@@ -92,7 +96,6 @@
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompFieldOfViewWatcher.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Utils\ReflectionUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedThings\FoW_MoteBubble.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_GenConstruct.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MouseoverReadout.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_PawnUIOverlay.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Selector.cs" />
