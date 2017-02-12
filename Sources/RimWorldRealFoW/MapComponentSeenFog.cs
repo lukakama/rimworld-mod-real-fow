@@ -28,6 +28,8 @@ namespace RimWorldRealFoW {
 
 		public bool[] viewBlockerCells = null;
 
+		private IntVec3[] idxToCellCache;
+
 		private int maxFactionLoadId;
 
 		private int mapCellLength;
@@ -57,6 +59,11 @@ namespace RimWorldRealFoW {
 			factionsShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
 			knownCells = new bool[mapCellLength];
 			viewBlockerCells = new bool[mapCellLength];
+
+			idxToCellCache = new IntVec3[mapCellLength];
+			for (int i = 0; i < mapCellLength; i++) {
+				idxToCellCache[i] = CellIndicesUtility.IndexToCell(i, mapSizeX, mapSizeZ);
+			}
 		}
 
 		public override void MapComponentUpdate() {
@@ -103,24 +110,21 @@ namespace RimWorldRealFoW {
 			// Reveal the starting position if home map and no pawns (landing).
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
-				ShadowCaster shadowCaster = new ShadowCaster();
-				shadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfViewWatcher.NON_MECH_DEFAULT_RANGE),
-					// isOpaque
+				ShadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfViewWatcher.NON_MECH_DEFAULT_RANGE),
 					viewBlockerCells, map.Size.x, map.Size.z,
-					// setFoV
-					(int x, int y) => {
-						if (!knownCells[map.cellIndices.CellToIndex(x, y)]) {
-							IntVec3 cell = new IntVec3(x, 0, y);
-							knownCells[map.cellIndices.CellToIndex(x, y)] = true;
+					knownCells, 0, 0, mapSizeX);
 
-							foreach (Thing t in map.thingGrid.ThingsListAtFast(cell)) {
-								CompHideFromPlayer comp = (CompHideFromPlayer) t.TryGetComp(CompHideFromPlayer.COMP_DEF);
-								if (comp != null) {
-									comp.forceSeen();
-								}
+				for (int i = 0; i < mapCellLength; i++) {
+					if (knownCells[i]) {
+						IntVec3 cell = CellIndicesUtility.IndexToCell(i, mapSizeX, mapSizeZ);
+						foreach (Thing t in map.thingGrid.ThingsListAtFast(cell)) {
+							CompHideFromPlayer comp = (CompHideFromPlayer) t.TryGetComp(CompHideFromPlayer.COMP_DEF);
+							if (comp != null) {
+								comp.forceSeen();
 							}
 						}
-					});
+					}
+				}
 			}
 
 			// Update all thing FoV and visibility.
@@ -148,7 +152,7 @@ namespace RimWorldRealFoW {
 		public void incrementSeen(Faction faction, int idx) {
 			int resIdx = resolveIdx(faction, idx);
 			if ((++factionsShownCells[resIdx] == 1) && faction.IsPlayer) {
-				IntVec3 cell = CellIndicesUtility.IndexToCell(idx, mapSizeX, mapSizeZ);
+				IntVec3 cell = idxToCellCache[idx];
 
 				if (!knownCells[idx]) {
 					knownCells[idx] = true;
@@ -182,12 +186,12 @@ namespace RimWorldRealFoW {
 		public void decrementSeen(Faction faction, int idx) {
 			int resIdx = resolveIdx(faction, idx);
 			if ((--factionsShownCells[resIdx] == 0) && faction.IsPlayer) {
-				IntVec3 cell = CellIndicesUtility.IndexToCell(idx, mapSizeX, mapSizeZ);
+				IntVec3 cell = idxToCellCache[idx];
 
 				if (initialized) {
 					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
-				
+
 				List<Thing> things = thingGrid.ThingsListAtFast(idx);
 				CompHideFromPlayer comp;
 				int thingsCount = things.Count;

@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using RimWorldRealFoW.ShadowCasters;
 using RimWorldRealFoW.ThingComps;
 using RimWorldRealFoW.Utils;
 using Verse;
@@ -85,15 +86,11 @@ namespace RimWorldRealFoW.Detours {
 
 
 			Map map = thing.Map;
-			bool targetFound = false;
-			compFoV.shadowCaster.computeFieldOfViewWithShadowCasting(sourceSq.x, sourceSq.z, sightRange,
-					seenFog.viewBlockerCells, map.Size.x, map.Size.z,
-					// setFoV
-					(int x, int y) => {
-						targetFound = true;
-					},
+			bool[] targetFound = new bool[1];
+			ShadowCaster.computeFieldOfViewWithShadowCasting(sourceSq.x, sourceSq.z, sightRange,
+					seenFog.viewBlockerCells, map.Size.x, map.Size.z, targetFound, 0, 0, 0,
 					octant, targetLoc.x, targetLoc.z);
-			return targetFound;
+			return targetFound[0];
 		}
 	}
 }

@@ -2,8 +2,6 @@
 // Source: https://blogs.msdn.microsoft.com/ericlippert/tag/shadowcasting/
 
 using System;
-using System.Collections.Generic;
-using Verse;
 
 namespace RimWorldRealFoW.ShadowCasters {
 	// Octants
@@ -22,21 +20,24 @@ namespace RimWorldRealFoW.ShadowCasters {
 		// can tell whether a given cell is opaque. Calls the setFoV action on
 		// every cell that is both within the radius and visible from the center. 
 
-		private FastQueue<ColumnPortion> queue = new FastQueue<ColumnPortion>(64);
+		private static FastQueue<ColumnPortion> queue = new FastQueue<ColumnPortion>(64);
 
-		public void computeFieldOfViewWithShadowCasting(
+		public static void computeFieldOfViewWithShadowCasting(
 				int startX, int startY, int radius,
 				bool[] viewBlockerCells, int maxX, int maxY,
-				Action<int, int> setFoV,
+				bool[] fovGrid, int fovGridMinX, int fovGridMinY, int fovGridWidth,
 				byte specificOctant = 255,
 				int targetX = -1,
 				int targetY = -1) {
 
 			if (specificOctant == 255) {
 				for (byte octant = 0; octant < 8; ++octant) {
-					computeFieldOfViewInOctantZero(
+						computeFieldOfViewInOctantZero(
 						octant,
-						setFoV,
+						fovGrid,
+						fovGridMinX,
+						fovGridMinY,
+						fovGridWidth,
 						radius,
 						startX,
 						startY,
@@ -49,7 +50,10 @@ namespace RimWorldRealFoW.ShadowCasters {
 			} else {
 				computeFieldOfViewInOctantZero(
 					specificOctant,
-					setFoV,
+					fovGrid,
+					fovGridMinX,
+					fovGridMinY,
+					fovGridWidth,
 					radius,
 					startX,
 					startY,
@@ -61,9 +65,9 @@ namespace RimWorldRealFoW.ShadowCasters {
 			}
 		}
 
-		private void computeFieldOfViewInOctantZero(
+		private static void computeFieldOfViewInOctantZero(
 				byte octant,
-				Action<int, int> setFieldOfView,
+				bool[] fovGrid, int fovGridMinX, int fovGridMinY, int fovGridWidth,
 				int radius,
 				int startX,
 				int startY,
@@ -165,12 +169,12 @@ namespace RimWorldRealFoW.ShadowCasters {
 
 						if (inRadius && worldX >= 0 && worldY >= 0 && worldX < maxX && worldY < maxY) {
 							if (targetX == -1) {
-								setFieldOfView(worldX, worldY);
+								fovGrid[((worldY - fovGridMinY) * fovGridWidth) + (worldX - fovGridMinX)] = true;
 
 							} else if (targetX == worldX && targetY == worldY) {
 								// The current cell is in the field of view.
-								setFieldOfView(worldX, worldY);
-
+								// TODO: setFieldOfView(worldX, worldY);
+								fovGrid[0] = true;
 								queue.Clear();
 								return;
 							}
@@ -268,9 +272,9 @@ namespace RimWorldRealFoW.ShadowCasters {
 
 
 		private struct ColumnPortion {
-			public int X { get; private set; }
-			public DirectionVector BottomVector { get; private set; }
-			public DirectionVector TopVector { get; private set; }
+			public int X;
+			public DirectionVector BottomVector;
+			public DirectionVector TopVector;
 
 			public ColumnPortion(int x, DirectionVector bottom, DirectionVector top) {
 				this.X = x;
@@ -279,8 +283,8 @@ namespace RimWorldRealFoW.ShadowCasters {
 			}
 		}
 		private struct DirectionVector {
-			public int X { get; private set; }
-			public int Y { get; private set; }
+			public int X;
+			public int Y;
 
 			public DirectionVector(int x, int y) {
 				this.X = x;

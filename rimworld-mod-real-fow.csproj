@@ -55,6 +55,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_EnvironmentInspectDrawer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_HaulAIUtility.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompProvideVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompAffectVision.cs" />
@@ -116,12 +117,16 @@
     </Content>
     <Content Include="About\Preview.png" />
     <Content Include="Defs\Buildings_Surveillance.xml" />
-    <Content Include="Defs\StarterDef.xml" />
+    <Content Include="Defs\StarterDef.xml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Textures\Things\Buildings\SurveillanceCamera.png" />
     <Content Include="Textures\Things\Buildings\WatchTower.png" />
     <None Include="README.md" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /Q /Y /S /I "$(ProjectDir)About\*" "$(TargetDir)..\About"

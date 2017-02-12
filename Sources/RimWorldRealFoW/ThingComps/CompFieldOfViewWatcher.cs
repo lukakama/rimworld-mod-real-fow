@@ -58,8 +58,6 @@ namespace RimWorldRealFoW.ThingComps {
 		private CompMannable compMannable;
 		private CompProvideVision compProvideVision;
 
-		public ShadowCaster shadowCaster;
-
 		private bool setupDone = false;
 
 		private Pawn pawn;
@@ -85,8 +83,6 @@ namespace RimWorldRealFoW.ThingComps {
 			base.PostSpawnSetup();
 
 			setupDone = true;
-
-			shadowCaster = new ShadowCaster();
 
 			calculated = false;
 			lastPosition = IntVec3.Invalid;
@@ -148,7 +144,7 @@ namespace RimWorldRealFoW.ThingComps {
 			updateFoV();
 		}
 
-		private bool doBenchmark = true;
+		private bool doBenchmark = false;
 		private bool benchmarkPerformed = false;
 
 		public override void CompTick() {
@@ -198,9 +194,11 @@ namespace RimWorldRealFoW.ThingComps {
 
 				Log.Message("Benchmark: " + sw.ElapsedMilliseconds);
 
-				// Took ~1400ms on a Core i5 2500 in a worst case scenario using a local reference map: 2 open areas, far view, computed 4000 times each
-				// with vision cleaning on each computation.
-				// Result in ~0.35ms per raw field of view computation.At 60 fps, a frame is rendered in ~16.67ms, so max ~50 player's pawns for 60 fps.
+				// Worst case scenario using a local reference map with 2 open areas and long view range, computed 4000 times each with vision cleaning 
+				// on each computation (usualy only perimeter updated).
+				// On a Core i5 2500:
+				//  - ~1150ms for a colonist: ~0.28ms per raw field of view computation, so 1 FPS drop each ~60 pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
+				//  - ~800ms for a non colonist: ~0.2ms per raw field of view computation, so 1 FPS drop each ~80 pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
 			}
 		}
 
@@ -489,9 +487,6 @@ namespace RimWorldRealFoW.ThingComps {
 			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
 			bool[] newViewMap = viewMapSwitch ? this.viewMap2 : this.viewMap1;
 
-			EdificeGrid edificeGrid = map.edificeGrid;
-			CellIndices cellIndices = map.cellIndices;
-
 			IntVec3 position = thing.Position;
 			Faction faction = parent.Faction;
 
@@ -516,9 +511,7 @@ namespace RimWorldRealFoW.ThingComps {
 					this.viewMap1 = newViewMap;
 				}
 			} else {
-				for (int i = 0; i < newViewArea; i++) {
-					newViewMap[i] = false;
-				}
+				Array.Clear(newViewMap, 0, newViewArea);
 			}
 
 			int viewRectMinZ = viewRect.minZ;
@@ -532,12 +525,7 @@ namespace RimWorldRealFoW.ThingComps {
 			// Occupied cells are always visible.
 			for (int x = occupedRect.minX; x <= occupedRect.maxX; x++) {
 				for (int z = occupedRect.minZ; z <= occupedRect.maxZ; z++) {
-					newViewMap[CellIndicesUtility.CellToIndex(x - newViewRectMinX, z - newViewRectMinZ, newViewWidth)] = true;
-					// Mark as seen only new cells.
-					if (x < viewRectMinX || z < viewRectMinZ || x > viewRectMaxX || z > viewRectMaxZ || viewMap.Length == 0 ||
-							!viewMap[CellIndicesUtility.CellToIndex(x - viewRectMinX, z - viewRectMinZ, viewWidth)]) {
-						mapCompSeenFog.incrementSeen(faction, (z * mapSizeX) + x);
-					}
+					newViewMap[((z - newViewRectMinZ) * newViewWidth) + (x - newViewRectMinX)] = true;
 				}
 			}
 
@@ -563,23 +551,25 @@ namespace RimWorldRealFoW.ThingComps {
 				IntVec3 viewPosition;
 				for (int i = 0; i < viewPositionsCount; i++) {
 					viewPosition = viewPositions[i];
-
 					if (viewPosition.x >= 0 && viewPosition.z >= 0 && viewPosition.x <= mapWitdh && viewPosition.z <= mapHeight &&
-								(i == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[cellIndices.CellToIndex(viewPosition.x, viewPosition.z)])) {
-						shadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
-							viewBlockerCells, mapSizeX, mapSizeZ,
-							// setFoV
-							delegate (int x, int z) {
-								int newIdx = CellIndicesUtility.CellToIndex(x - newViewRectMinX, z - newViewRectMinZ, newViewWidth);
-								if (!newViewMap[newIdx]) {
-									newViewMap[newIdx] = true;
-									// Mark as seen only new cells.
-									if (x < viewRectMinX || z < viewRectMinZ || x > viewRectMaxX || z > viewRectMaxZ || viewMap.Length == 0 ||
-											!viewMap[CellIndicesUtility.CellToIndex(x - viewRectMinX, z - viewRectMinZ, viewWidth)]) {
-										mapCompSeenFog.incrementSeen(faction, (z * mapSizeX) + x);
-									}
-								}
-							});
+								(i == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[(viewPosition.z * mapSizeX)  + viewPosition.x])) {
+						ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+							viewBlockerCells, mapSizeX, mapSizeZ, newViewMap, newViewRectMinX, newViewRectMinZ, newViewWidth);
+					}
+				}
+			}
+
+			// Check seen cells.
+			int newX;
+			int newZ;
+			for (int i = 0; i < newViewArea; i++) {
+				if (newViewMap[i]) {
+					newX = newViewRectMinX + (i % newViewWidth);
+					newZ = newViewRectMinZ + (i / newViewWidth);
+					// Mark as seen only new cells.
+					if (newX < viewRectMinX || newZ < viewRectMinZ || newX > viewRectMaxX || newZ > viewRectMaxZ || viewMap.Length == 0 ||
+							!viewMap[((newZ - viewRectMinZ) *  viewWidth) + (newX - viewRectMinX)]) {
+						mapCompSeenFog.incrementSeen(faction, (newZ * mapSizeX) + newX);
 					}
 				}
 			}
@@ -593,7 +583,7 @@ namespace RimWorldRealFoW.ThingComps {
 						x = viewRectMinX + (i % viewWidth);
 						z = viewRectMinZ + (i / viewWidth);
 						if (x < newViewRectMinX || z < newViewRectMinZ || x > newViewRectMaxX || z > newViewRectMaxZ ||
-								!newViewMap[CellIndicesUtility.CellToIndex(x - newViewRectMinX, z - newViewRectMinZ, newViewWidth)]) {
+								!newViewMap[((z - newViewRectMinZ) * newViewWidth) + (x - newViewRectMinX)]) {
 							mapCompSeenFog.decrementSeen(faction, (z * mapSizeX) + x);
 						}
 					}
@@ -623,7 +613,7 @@ namespace RimWorldRealFoW.ThingComps {
 				int viewArea = viewRect.Area;
 				for (int i = 0; i < viewArea; i++) {
 					if (viewMap[i]) {
-						mapCompSeenFog.decrementSeen(faction, CellIndicesUtility.CellToIndex((i % viewWidth) + viewRect.minX, (i / viewWidth) + viewRect.minZ, mapX));
+						mapCompSeenFog.decrementSeen(faction, (((i / viewWidth) + viewRect.minZ) * mapX) + ((i % viewWidth) + viewRect.minX));
 						viewMap[i] = false;
 					}
 				}
