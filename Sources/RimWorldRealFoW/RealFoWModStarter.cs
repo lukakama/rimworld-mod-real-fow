@@ -24,7 +24,7 @@ using Verse;
 using Verse.AI;
 
 namespace RimWorldRealFoW {
-	[StaticConstructorOnStartup]
+[StaticConstructorOnStartup]
 	class RealFoWModStarter : Def {
 		static RealFoWModStarter() {
 			// NO-OP (here for future uses)
@@ -93,6 +93,8 @@ namespace RimWorldRealFoW {
 			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
 			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
 
+			detour(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
+			
 			detour(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageSound));
 			detour(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterType), typeof(GlobalTargetInfo), typeof(string));
 		}
