@@ -68,6 +68,8 @@ namespace RimWorldRealFoW {
 			long totDesignators = 0;
 
 			foreach (DesignationCategoryDef def in DefDatabase<DesignationCategoryDef>.AllDefs) {
+				// Experienced some null reference, probably due some other mods.
+				if (def != null) {
 				List<Designator> resolvedDesignators = ReflectionUtils.getInstancePrivateValue<List<Designator>>(def, "resolvedDesignators");
 
 				for (int i = 0; i < resolvedDesignators.Count; i++) {
@@ -78,7 +80,7 @@ namespace RimWorldRealFoW {
 
 					if (originalType == typeof(Designator_Build)) {
 						Designator_Build des = (Designator_Build) resolvedDesignators[i];
-						resolvedDesignators[i] = new FoW_Designator_Build(ReflectionUtils.getInstancePrivateValue<BuildableDef>(des, "entDef"));
+							resolvedDesignators[i] = new FoW_Designator_Build(des.PlacingDef);
 
 						patchedDesignators++;
 					} else if (originalType == typeof(Designator_Install)) {
@@ -94,6 +96,7 @@ namespace RimWorldRealFoW {
 						patchedDesignators++;
 					}
 				}
+			}
 			}
 
 			Log.Message("Patched " + patchedDesignators + " designators on " + totDesignators + ".");
