@@ -21,16 +21,19 @@ namespace RimWorldRealFoW.ThingComps {
 
 		private bool calculated;
 		private IntVec3 lastPosition;
-		
+		private Rot4 lastRotation;
+		private bool isOneCell;
+
 		private Map map;
 		private FogGrid fogGrid;
 		private MapComponentSeenFog mapCompSeenFog;
-
+		
 		private CompHiddenable compHiddenable;
 
 		private bool setupDone = false;
 		private bool seenByPlayer;
 		private Pawn pawn;
+		private IntVec2 size;
 
 		private bool isSaveable;
 		private bool saveCompressible;
@@ -42,8 +45,11 @@ namespace RimWorldRealFoW.ThingComps {
 
 			calculated = false;
 			lastPosition = IntVec3.Invalid;
+			lastRotation = Rot4.Invalid;
 
 			pawn = parent as Pawn;
+			size = parent.def.size;
+			isOneCell = size.z == 1 && size.x == 1;
 
 			isSaveable = parent.def.isSaveable;
 			saveCompressible = parent.def.saveCompressible;
@@ -68,8 +74,9 @@ namespace RimWorldRealFoW.ThingComps {
 		public override void CompTick() {
 			base.CompTick();
 
-			// Check every 30 thick.
-			if (Find.TickManager.TicksGame % 30 == 0) {
+			// Check 5 times per seconds for position and rotation change (nothing should be so fast, but rotation has no cap).
+			int currentTick = Find.TickManager.TicksGame;
+			if ((currentTick % 12) == 0) {
 				updateVisibility(false);
 			}
 		}
@@ -86,8 +93,9 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 
 			Thing thing = base.parent;
-
-			if (thing != null && thing.Spawned && thing.Map != null && thing.Position != IntVec3.Invalid) {
+			IntVec3 newPosition = thing.Position;
+			Rot4 newRotation = thing.Rotation;
+			if (thing != null && thing.Spawned && thing.Map != null && newPosition != IntVec3.Invalid && (isOneCell || newRotation != Rot4.Invalid)) {
 				if (map != thing.Map) {
 					map = thing.Map;
 					fogGrid = map.fogGrid;
@@ -101,9 +109,10 @@ namespace RimWorldRealFoW.ThingComps {
 					return;
 				}
 				
-				if (forceCheck || !calculated || thing.Position != lastPosition) {
+				if (forceCheck || !calculated || newPosition != lastPosition || (!isOneCell && newRotation != lastRotation)) {
 					calculated = true;
-					lastPosition = thing.Position;
+					lastPosition = newPosition;
+					lastRotation = newRotation;
 
 					bool belongToPlayer = thing.Faction != null && thing.Faction.IsPlayer;
 
@@ -133,12 +142,17 @@ namespace RimWorldRealFoW.ThingComps {
 
 		private bool hasPartShownToPlayer() {
 			Faction playerFaction = Faction.OfPlayer;
-			CellRect occupiedRect = parent.OccupiedRect();
+			if (isOneCell) {
+				return mapCompSeenFog.isShown(playerFaction, lastPosition.x, lastPosition.z);
 
-			for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
-				for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
-					if (mapCompSeenFog.isShown(playerFaction, x, z)) {
-						return true;
+			} else {
+				CellRect occupiedRect = GenAdj.OccupiedRect(lastPosition, lastRotation, size);
+
+				for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
+					for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
+						if (mapCompSeenFog.isShown(playerFaction, x, z)) {
+							return true;
+						}
 					}
 				}
 			}
