@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using RimWorld;
 using RimWorldRealFoW.ShadowCasters;
 using RimWorldRealFoW.ThingComps;
 using RimWorldRealFoW.Utils;
@@ -19,11 +20,10 @@ using Verse;
 namespace RimWorldRealFoW.Detours {
 	static class _Verb {
 		private static bool CanHitCellFromCellIgnoringRange(this Verb _this, IntVec3 sourceSq, IntVec3 targetLoc) {
-			if (_this.caster.Faction != null && _this.caster is Pawn) {
-				return (!_this.verbProps.mustCastOnOpenGround || (targetLoc.Standable(_this.caster.Map) && !_this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) && (!_this.verbProps.requireLineOfSight || 
+			if (_this.caster.Faction != null) {
+				return (!_this.verbProps.mustCastOnOpenGround || (targetLoc.Standable(_this.caster.Map) && !_this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) && (!_this.verbProps.requireLineOfSight ||
 					(GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true) && (seenByFaction(_this.caster, targetLoc) || fovLineOfSight(sourceSq, targetLoc, _this.caster))));
 			}
-
 			return (!_this.verbProps.mustCastOnOpenGround || (targetLoc.Standable(_this.caster.Map) && !_this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) && (!_this.verbProps.requireLineOfSight || GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true));
 		}
 
@@ -37,6 +37,19 @@ namespace RimWorldRealFoW.Detours {
 		}
 
 		private static bool fovLineOfSight(IntVec3 sourceSq, IntVec3 targetLoc, Thing thing) {
+			// If the thing is mannable, then use the manning pawn to perform the calculation.
+			CompMannable compMannable = thing.TryGetComp<CompMannable>();
+			if (compMannable != null) {
+				thing = compMannable.ManningPawn;
+				// Apply interaction cell offset.
+				sourceSq += (thing.Position - thing.InteractionCell);
+			}
+
+			// If not a pawn, then doesn't need a fov calculation.
+			if (!(thing is Pawn)) {
+				return true;
+			}
+
 			MapComponentSeenFog seenFog = thing.Map.getMapComponentSeenFog();
 			CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
 			// If requires moving, calculate only the base sight.

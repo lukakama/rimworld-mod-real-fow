@@ -385,29 +385,37 @@ namespace RimWorldRealFoW.ThingComps {
 
 			initMap();
 
-			bool sleeping = (parent.def.race == null || !pawn.def.race.IsMechanoid) && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
+			bool sleeping = (raceProp == null || !raceProp.IsMechanoid) && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
 
 			if (!shouldMove && !sleeping && (pawnPather == null || !pawnPather.MovingNow)) {
-				Verb verb = pawn.TryGetAttackVerb(true);
-				if (verb != null && verb.verbProps.range > baseViewRange && verb.verbProps.requireLineOfSight && verb.ownerEquipment.def.IsRangedWeapon) {
-					if (pawn.CurJob != null) {
-						JobDef jobDef = pawn.CurJob.def;
-						if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
-							float weaponRange = verb.verbProps.range;
-							if (baseViewRange < weaponRange) {
-								int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;
 
-								float statValue = pawn.GetStatValue(StatDefOf.AimingDelayFactor, true);
-								int ticksToSearch = (verb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((weaponRange - baseViewRange) / 2);
+				Verb attackVerb = null;
+				if (pawn.CurJob != null) {
+					JobDef jobDef = pawn.CurJob.def;
+					if (jobDef == JobDefOf.ManTurret) {
+						Building_Turret mannedTurret = pawn.CurJob.targetA.Thing as Building_Turret;
+						if (mannedTurret != null) {
+							attackVerb = mannedTurret.AttackVerb;
+						}
+					} else if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
+						attackVerb = pawn.TryGetAttackVerb(true);
+					}
+				}
 
-								if (ticksStanding >= ticksToSearch) {
-									sightRange = verb.verbProps.range * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
-								} else {
-									int incValue = Mathf.RoundToInt((verb.verbProps.range - baseViewRange) * ((float) ticksStanding / ticksToSearch));
+				if (attackVerb != null && attackVerb.verbProps.range > baseViewRange && attackVerb.verbProps.requireLineOfSight && attackVerb.ownerEquipment.def.IsRangedWeapon) {
+					float attackVerbRange = attackVerb.verbProps.range;
+					if (baseViewRange < attackVerbRange) {
+						int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;
 
-									sightRange = (baseViewRange + incValue) * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
-								}
-							}
+						float statValue = pawn.GetStatValue(StatDefOf.AimingDelayFactor, true);
+						int ticksToSearch = (attackVerb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((attackVerbRange - baseViewRange) / 2);
+
+						if (ticksStanding >= ticksToSearch) {
+							sightRange = attackVerbRange * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+						} else {
+							int incValue = Mathf.RoundToInt((attackVerbRange - baseViewRange) * ((float) ticksStanding / ticksToSearch));
+
+							sightRange = (baseViewRange + incValue) * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
 						}
 					}
 				}
