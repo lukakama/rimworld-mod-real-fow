@@ -56,6 +56,8 @@ namespace RimWorldRealFoW {
 						addComponent(def, CompViewBlockerWatcher.COMP_DEF);
 					}
 
+					addComponent(def, CompComponentsPositionTracker.COMP_DEF);
+
 					addComponent(def, CompHiddenable.COMP_DEF);
 					addComponent(def, CompHideFromPlayer.COMP_DEF);
 				}
@@ -70,33 +72,33 @@ namespace RimWorldRealFoW {
 			foreach (DesignationCategoryDef def in DefDatabase<DesignationCategoryDef>.AllDefs) {
 				// Experienced some null reference, probably due some other mods.
 				if (def != null) {
-				List<Designator> resolvedDesignators = ReflectionUtils.getInstancePrivateValue<List<Designator>>(def, "resolvedDesignators");
+					List<Designator> resolvedDesignators = ReflectionUtils.getInstancePrivateValue<List<Designator>>(def, "resolvedDesignators");
 
-				for (int i = 0; i < resolvedDesignators.Count; i++) {
-					totDesignators++;
+					for (int i = 0; i < resolvedDesignators.Count; i++) {
+						totDesignators++;
 
-					Type originalType = resolvedDesignators[i].GetType();
-					Type patchedType = Type.GetType("RimWorldRealFoW.PatchedDesignators.FoW_" + originalType.Name, false);
+						Type originalType = resolvedDesignators[i].GetType();
+						Type patchedType = Type.GetType("RimWorldRealFoW.PatchedDesignators.FoW_" + originalType.Name, false);
 
-					if (originalType == typeof(Designator_Build)) {
-						Designator_Build des = (Designator_Build) resolvedDesignators[i];
+						if (originalType == typeof(Designator_Build)) {
+							Designator_Build des = (Designator_Build) resolvedDesignators[i];
 							resolvedDesignators[i] = new FoW_Designator_Build(des.PlacingDef);
 
-						patchedDesignators++;
-					} else if (originalType == typeof(Designator_Install)) {
-						Designator_Install des = (Designator_Install) resolvedDesignators[i];
-						resolvedDesignators[i] = new FoW_Designator_Install {
-							hotKey = des.hotKey
-						};
+							patchedDesignators++;
+						} else if (originalType == typeof(Designator_Install)) {
+							Designator_Install des = (Designator_Install) resolvedDesignators[i];
+							resolvedDesignators[i] = new FoW_Designator_Install {
+								hotKey = des.hotKey
+							};
 
-						patchedDesignators++;
-					} else if (patchedType != null) {
-						resolvedDesignators[i] = (Designator) Activator.CreateInstance(patchedType);
+							patchedDesignators++;
+						} else if (patchedType != null) {
+							resolvedDesignators[i] = (Designator) Activator.CreateInstance(patchedType);
 
-						patchedDesignators++;
+							patchedDesignators++;
+						}
 					}
 				}
-			}
 			}
 
 			Log.Message("Patched " + patchedDesignators + " designators on " + totDesignators + ".");

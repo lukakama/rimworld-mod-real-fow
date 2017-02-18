@@ -161,7 +161,7 @@ namespace RimWorldRealFoW.ThingComps {
 				benchmark();
 			}
 
-			// Update at every position change, every 30 ticks from last position change.
+			// Update at every position change and then after every 1/2 second from last position change.
 			if (lastPosition != IntVec3.Invalid && lastPosition != parent.Position) {
 				lastPositionUpdateTick = currentTick;
 				updateFoV();
@@ -197,8 +197,8 @@ namespace RimWorldRealFoW.ThingComps {
 				// Worst case scenario using a local reference map with 2 open areas and long view range, computed 4000 times each with vision cleaning 
 				// on each computation (usualy only perimeter updated).
 				// On a Core i5 2500:
-				//  - ~1150ms for a colonist: ~0.28ms per raw field of view computation, so 1 FPS drop each ~60 pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
-				//  - ~800ms for a non colonist: ~0.2ms per raw field of view computation, so 1 FPS drop each ~80 pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
+				//  - ~900ms for a colonist: ~0.23ms per raw field of view computation, so 1 FPS drop each ~72 concurrently updating pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
+				//  - ~800ms for a non colonist: ~0.20ms per raw field of view computation, so 1 FPS drop each ~80 concurrently updating pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
 			}
 		}
 
@@ -220,8 +220,8 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 
 			Thing thing = base.parent;
-
-			if (thing != null && thing.Spawned && thing.Map != null && thing.Position != IntVec3.Invalid) {
+			IntVec3 newPosition = thing.Position;
+			if (thing != null && thing.Spawned && thing.Map != null && newPosition != IntVec3.Invalid) {
 				initMap();
 
 				if (thing.Faction != null && (pawn == null || !pawn.Dead)) {
@@ -236,7 +236,7 @@ namespace RimWorldRealFoW.ThingComps {
 							// If animal, only those with a master set and release training can contribute to the faction FoW.
 							sightRange = -1;
 						} else {
-							sightRange = calcPawnSightRange(pawn.Position, false, false);
+							sightRange = calcPawnSightRange(newPosition, false, false);
 
 							if (pawn.CurJob != null) {
 								JobDef jobDef = pawn.CurJob.def;
@@ -246,9 +246,9 @@ namespace RimWorldRealFoW.ThingComps {
 							}
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || pawn.Position != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
 							calculated = true;
-							lastPosition = pawn.Position;
+							lastPosition = newPosition;
 							lastSightRange = sightRange;
 							lastIsPeeking = isPeeking;
 
@@ -277,9 +277,9 @@ namespace RimWorldRealFoW.ThingComps {
 							sightRange = -1;
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || thing.Position != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
-							lastPosition = thing.Position;
+							lastPosition = newPosition;
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
@@ -308,9 +308,9 @@ namespace RimWorldRealFoW.ThingComps {
 							sightRange = -1;
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || thing.Position != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
-							lastPosition = thing.Position;
+							lastPosition = newPosition;
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
@@ -338,9 +338,9 @@ namespace RimWorldRealFoW.ThingComps {
 							sightRange = -1;
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || thing.Position != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
-							lastPosition = thing.Position;
+							lastPosition = newPosition;
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
@@ -424,14 +424,10 @@ namespace RimWorldRealFoW.ThingComps {
 			*/
 
 			// Check if standing on an affect view object.
-			List<Thing> things = thingGrid.ThingsListAtFast(cellIndices.CellToIndex(position));
-			CompAffectVision comp;
-			int thingsCount = things.Count;
-			for (int i = 0; i < thingsCount; i++) {
-				comp = things[i].TryGetComp<CompAffectVision>();
-				if (comp != null) {
-					sightRange *= comp.Props.fovMultiplier;
-				}
+			List<CompAffectVision> compsAffectVision = mapCompSeenFog.compAffectVisionGrid[cellIndices.CellToIndex(position)];
+			int compsCount = compsAffectVision.Count;
+			for (int i = 0; i < compsCount; i++) {
+				sightRange *= compsAffectVision[i].Props.fovMultiplier;
 			}
 
 			// Additional dark and weather debuff.

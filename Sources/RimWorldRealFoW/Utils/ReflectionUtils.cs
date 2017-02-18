@@ -20,6 +20,10 @@ namespace RimWorldRealFoW.Utils {
 			return (T) _this.GetType().GetProperty(fieldName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(_this, null);
 		}
 
+		public static bool hasInstancePrivateField(object _this, string fieldName) {
+			return _this.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance) != null;
+		}
+
 		public static T getInstancePrivateValue<T>(object _this, string fieldName) {
 			return (T) _this.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(_this);
 		}

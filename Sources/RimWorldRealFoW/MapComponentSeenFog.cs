@@ -30,6 +30,9 @@ namespace RimWorldRealFoW {
 
 		private IntVec3[] idxToCellCache;
 
+		private List<CompHideFromPlayer>[] compHideFromPlayerGrid;
+		public List<CompAffectVision>[] compAffectVisionGrid;
+
 		private int maxFactionLoadId;
 
 		private int mapCellLength;
@@ -61,8 +64,13 @@ namespace RimWorldRealFoW {
 			viewBlockerCells = new bool[mapCellLength];
 
 			idxToCellCache = new IntVec3[mapCellLength];
+			compHideFromPlayerGrid = new List<CompHideFromPlayer>[mapCellLength];
+			compAffectVisionGrid = new List<CompAffectVision>[mapCellLength];
 			for (int i = 0; i < mapCellLength; i++) {
 				idxToCellCache[i] = CellIndicesUtility.IndexToCell(i, mapSizeX, mapSizeZ);
+
+				compHideFromPlayerGrid[i] = new List<CompHideFromPlayer>(16);
+				compAffectVisionGrid[i] = new List<CompAffectVision>(16);
 			}
 		}
 
@@ -110,6 +118,28 @@ namespace RimWorldRealFoW {
 			return factionsShownCells[resIdx] != 0;
 		}
 
+		public void registerCompHideFromPlayerPosition(CompHideFromPlayer comp, int x, int z) {
+			if (x >= 0 && z >= 0 && x < mapSizeX && z < mapSizeZ) {
+				compHideFromPlayerGrid[(z * mapSizeX) + x].Add(comp);
+			}
+		}
+		public void deregisterCompHideFromPlayerPosition(CompHideFromPlayer comp, int x, int z) {
+			if (x >= 0 && z >= 0 && x < mapSizeX && z < mapSizeZ) {
+				compHideFromPlayerGrid[(z * mapSizeX) + x].Remove(comp);
+			}
+		}
+
+		public void registerCompAffectVisionPosition(CompAffectVision comp, int x, int z) {
+			if (x >= 0 && z >= 0 && x < mapSizeX  && z < mapSizeZ) {
+				compAffectVisionGrid[(z * mapSizeX) + x].Add(comp);
+			}
+		}
+		public void deregisterCompAffectVisionPosition(CompAffectVision comp, int x, int z) {
+			if (x >= 0 && z >= 0 && x < mapSizeX && z < mapSizeZ) {
+				compAffectVisionGrid[(z * mapSizeX) + x].Remove(comp);
+			}
+		}
+
 		private void init() {
 			// Reveal the starting position if home map and no pawns (landing).
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
@@ -133,13 +163,19 @@ namespace RimWorldRealFoW {
 
 			// Update all thing FoV and visibility.
 			foreach (Thing thing in map.listerThings.AllThings) {
-				CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
-				CompHideFromPlayer compVisibility = (CompHideFromPlayer) thing.TryGetComp(CompHideFromPlayer.COMP_DEF);
-				if (compFoV != null) {
-					compFoV.updateFoV();
-				}
-				if (compVisibility != null) {
-					compVisibility.updateVisibility(true);
+				if (thing.Spawned) {
+					CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
+					CompComponentsPositionTracker compVisibilityTracker = (CompComponentsPositionTracker) thing.TryGetComp(CompComponentsPositionTracker.COMP_DEF);
+					CompHideFromPlayer compVisibility = (CompHideFromPlayer) thing.TryGetComp(CompHideFromPlayer.COMP_DEF);
+					if (compVisibilityTracker != null) {
+						compVisibilityTracker.updatePosition();
+					}
+					if (compFoV != null) {
+						compFoV.updateFoV();
+					}
+					if (compVisibility != null) {
+						compVisibility.updateVisibility(true);
+					}
 				}
 			}
 
@@ -167,22 +203,18 @@ namespace RimWorldRealFoW {
 				}
 
 				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
-				if (designation != null && MineUtility.MineableInCell(cell, this.map) == null) {
+				if (designation != null && MineUtility.MineableInCell(cell, map) == null) {
 					designation.Delete();
 				}
 
 				if (initialized) {
 					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
-
-				List<Thing> things = thingGrid.ThingsListAtFast(idx);
-				CompHideFromPlayer comp;
-				int thingsCount = things.Count;
-				for (int i = 0; i < thingsCount; i++) {
-					comp = (CompHideFromPlayer) things[i].TryGetComp(CompHideFromPlayer.COMP_DEF);
-					if (comp != null) {
-						comp.updateVisibility(true);
-					}
+				
+				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+				int compCount = comps.Count;
+				for (int i = 0; i < compCount; i++) {
+					comps[i].updateVisibility(true);
 				}
 			}
 		}
@@ -195,15 +227,11 @@ namespace RimWorldRealFoW {
 				if (initialized) {
 					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
-
-				List<Thing> things = thingGrid.ThingsListAtFast(idx);
-				CompHideFromPlayer comp;
-				int thingsCount = things.Count;
-				for (int i = 0; i < thingsCount; i++) {
-					comp = (CompHideFromPlayer) things[i].TryGetComp(CompHideFromPlayer.COMP_DEF);
-					if (comp != null) {
-						comp.updateVisibility(true);
-					}
+				
+				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+				int compCount = comps.Count;
+				for (int i = 0; i < compCount; i++) {
+					comps[i].updateVisibility(true);
 				}
 			}
 		}
