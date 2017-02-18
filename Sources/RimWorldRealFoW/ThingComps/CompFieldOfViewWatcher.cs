@@ -61,6 +61,8 @@ namespace RimWorldRealFoW.ThingComps {
 		private bool setupDone = false;
 
 		private Pawn pawn;
+		private ThingDef def;
+		private RaceProperties raceProp;
 		private Building building;
 		private Building_TurretGun turret;
 
@@ -118,7 +120,10 @@ namespace RimWorldRealFoW.ThingComps {
 			thingGrid = map.thingGrid;
 			cellIndices = map.cellIndices;
 
-			if (parent.def.race == null || !parent.def.race.IsMechanoid) {
+			def = parent.def;
+			raceProp = def.race;
+
+			if (raceProp == null || !raceProp.IsMechanoid) {
 				baseViewRange = NON_MECH_DEFAULT_RANGE;
 			} else {
 				baseViewRange = MECH_DEFAULT_RANGE;
@@ -431,13 +436,15 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 
 			// Additional dark and weather debuff.
-			if (pawn.def.race == null || !pawn.def.race.IsMechanoid) {
+			if (raceProp == null || !raceProp.IsMechanoid) {
 				float currGlow = map.glowGrid.GameGlowAt(position);
 				if (currGlow != 1f) {
 					int darkModifier = 60;
 					// Each bionic eye reduce the dark debuff by 20.
-					foreach (Hediff hediff in pawn.health.hediffSet.GetHediffs<Hediff_AddedPart>()) {
-						if (hediff.def == HediffDefOf.BionicEye) {
+					List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+					int hediffsCount = hediffs.Count;
+					for (int i = 0; i < hediffsCount; i++) {
+						if (hediffs[i].def == HediffDefOf.BionicEye) {
 							darkModifier += 20;
 						}
 					}
