@@ -27,12 +27,11 @@ using Verse;
 using Verse.AI;
 
 namespace RimWorldRealFoW {
-[StaticConstructorOnStartup]
-	class RealFoWModStarter : Def {
+	[StaticConstructorOnStartup]
+	public class RealFoWModStarter : Def {
 		static RealFoWModStarter() {
 			// NO-OP (here for future uses)
 		}
-
 
 		public RealFoWModStarter() {
 			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init.", false, null);
