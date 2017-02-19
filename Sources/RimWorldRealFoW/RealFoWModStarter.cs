@@ -48,6 +48,10 @@ namespace RimWorldRealFoW {
 
 				if (typeof(ThingWithComps).IsAssignableFrom(def.thingClass)
 						&& !typeof(Mote).IsAssignableFrom(def.thingClass)) {
+					// This must be the first component triggered on ticks (other component behaviours depend on his trackings),
+					// so it must be added first.
+					addComponent(def, CompComponentsPositionTracker.COMP_DEF);
+
 					if (typeof(Building).IsAssignableFrom(def.thingClass) 
 							|| typeof(Pawn).IsAssignableFrom(def.thingClass)) {
 						addComponent(def, CompFieldOfViewWatcher.COMP_DEF);
@@ -55,8 +59,6 @@ namespace RimWorldRealFoW {
 					if (typeof(Building).IsAssignableFrom(def.thingClass)) {
 						addComponent(def, CompViewBlockerWatcher.COMP_DEF);
 					}
-
-					addComponent(def, CompComponentsPositionTracker.COMP_DEF);
 
 					addComponent(def, CompHiddenable.COMP_DEF);
 					addComponent(def, CompHideFromPlayer.COMP_DEF);
