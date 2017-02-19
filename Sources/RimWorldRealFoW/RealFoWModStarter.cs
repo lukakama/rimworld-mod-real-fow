@@ -71,7 +71,7 @@ namespace RimWorldRealFoW {
 
 			foreach (DesignationCategoryDef def in DefDatabase<DesignationCategoryDef>.AllDefs) {
 				// Experienced some null reference, probably due some other mods.
-				if (def != null) {
+				if (def != null && ReflectionUtils.hasInstancePrivateField(def, "resolvedDesignators")) {
 					List<Designator> resolvedDesignators = ReflectionUtils.getInstancePrivateValue<List<Designator>>(def, "resolvedDesignators");
 
 					for (int i = 0; i < resolvedDesignators.Count; i++) {
