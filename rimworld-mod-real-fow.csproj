@@ -40,6 +40,9 @@
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
+    <Reference Include="HugsLib">
+      <HintPath>libs\HugsLib.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -58,6 +61,7 @@
     <Compile Include="Sources\RimWorldRealFoW\Detours\_InstallationDesignatorDatabase.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Install.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Build.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\RealFoWModSettings.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompComponentsPositionTracker.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompProvideVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompAffectVision.cs" />
@@ -121,6 +125,7 @@
     <Content Include="Defs\StarterDef.xml">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Languages\English\Keyed\Preferences.xml" />
     <Content Include="Textures\Things\Buildings\SurveillanceCamera.png" />
     <Content Include="Textures\Things\Buildings\WatchTower.png" />
     <None Include="README.md" />
@@ -131,9 +136,11 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
+      xcopy /Q /Y /S /I "$(ProjectDir)Assemblies\*" "$(TargetDir)"
       xcopy /Q /Y /S /I "$(ProjectDir)About\*" "$(TargetDir)..\About"
       xcopy /Q /Y /S /I "$(ProjectDir)Defs\*" "$(TargetDir)..\Defs"
       xcopy /Q /Y /S /I "$(ProjectDir)Textures\*" "$(TargetDir)..\Textures"
+      xcopy /Q /Y /S /I "$(ProjectDir)Languages\*" "$(TargetDir)..\Languages"
     </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
@@ -141,6 +148,7 @@
       del /Q "$(TargetDir)\*"
       rd /S /Q "$(TargetDir)..\Defs"
       rd /S /Q "$(TargetDir)..\Textures"
+      rd /S /Q "$(TargetDir)..\Languages"
     </PreBuildEvent>
   </PropertyGroup>
   <Target Name="AfterBuild" Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

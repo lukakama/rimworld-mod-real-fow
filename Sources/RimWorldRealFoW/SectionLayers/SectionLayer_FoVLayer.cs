@@ -21,9 +21,9 @@ namespace RimWorldRealFoW.SectionLayers {
 
 	public class SectionLayer_FoVLayer : SectionLayer {
 		// TODO: Link to preferences.
-		private bool prefEnableFade = true;
-		private int prefFadeSpeedMult = 2;
-
+		public static bool prefEnableFade = true;
+		public static float prefFadeSpeedMult = 2;
+		public static byte prefFogAlpha = 86;
 
 		private MapComponentSeenFog pawnFog;
 		
@@ -160,7 +160,7 @@ namespace RimWorldRealFoW.SectionLayers {
 				
 				
 				bool hasFoggedVerts = false;
-				long fogTransitionTick = Find.TickManager.TicksGame * prefFadeSpeedMult;
+				long fogTransitionTick = (long) (Find.TickManager.TicksGame * prefFadeSpeedMult);
 
 				int cellIdx;
 				int cellIdxN;
@@ -310,7 +310,7 @@ namespace RimWorldRealFoW.SectionLayers {
 						for (int m = 0; m < 9; m++) {
 							if (this.vertsNotShown[m]) {
 								if (vertsSeen[m]) {
-									alpha = 127;
+									alpha = prefFogAlpha;
 								} else {
 									alpha = 255;
 								}
@@ -352,7 +352,7 @@ namespace RimWorldRealFoW.SectionLayers {
 
 		public override void DrawLayer() {
 			if (prefEnableFade && this.Visible && activeFogTransitions) {
-				long fogTransitionTick = Find.TickManager.TicksGame * prefFadeSpeedMult;
+				long fogTransitionTick = (long) (Find.TickManager.TicksGame * prefFadeSpeedMult);
 
 				bool alphaUpdated = false;
 
