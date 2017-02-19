@@ -48,6 +48,8 @@ namespace RimWorldRealFoW.ThingComps {
 
 			lastPosition = IntVec3.Invalid;
 			lastRotation = Rot4.Invalid;
+
+			updatePosition();
 		}
 
 		public override void ReceiveCompSignal(string signal) {
