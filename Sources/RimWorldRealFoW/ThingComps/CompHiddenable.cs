@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorld;
+using RimWorldRealFoW.Utils;
 using Verse;
 
 namespace RimWorldRealFoW.ThingComps {
@@ -21,6 +22,10 @@ namespace RimWorldRealFoW.ThingComps {
 		private IntVec3 lastPosition = IntVec3.Invalid;
 
 		public bool hidden = false;
+
+		private Map map = null;
+
+		private MapComponentSeenFog mapComp = null;
 
 		public void hide() {
 			if (!hidden) {
@@ -60,11 +65,18 @@ namespace RimWorldRealFoW.ThingComps {
 		}
 
 		private void updateMeshes() {
-			Map map = parent.Map;
-			MapMeshFlag allFlags = MapMeshFlag.Buildings | MapMeshFlag.BuildingsDamage | MapMeshFlag.GroundGlow | MapMeshFlag.PowerGrid | MapMeshFlag.Roofs | MapMeshFlag.Snow | MapMeshFlag.Terrain | MapMeshFlag.Things | MapMeshFlag.Zone;
-			foreach (IntVec3 cell in parent.OccupiedRect().Cells) {
-				if (cell.InBounds(map)) {
-					map.mapDrawer.MapMeshDirty(cell, allFlags, false, false);
+			if (map != parent.Map) {
+				map = parent.Map;
+				mapComp = map.getMapComponentSeenFog();
+			}
+
+			// Update meshes only if the map has been already initialized (sometime this is called when the map drawer isn't initialized yet).
+			if (mapComp != null && mapComp.initialized) {
+				MapMeshFlag allFlags = MapMeshFlag.Buildings | MapMeshFlag.BuildingsDamage | MapMeshFlag.GroundGlow | MapMeshFlag.PowerGrid | MapMeshFlag.Roofs | MapMeshFlag.Snow | MapMeshFlag.Terrain | MapMeshFlag.Things | MapMeshFlag.Zone;
+				foreach (IntVec3 cell in parent.OccupiedRect().Cells) {
+					if (cell.InBounds(map)) {
+						map.mapDrawer.MapMeshDirty(cell, allFlags, false, false);
+					}
 				}
 			}
 		}

@@ -44,7 +44,7 @@ namespace RimWorldRealFoW {
 
 		private ThingGrid thingGrid;
 
-		private bool initialized = false;
+		public bool initialized = false;
 
 		public MapComponentSeenFog(Map map) : base(map) {
 			mapCellLength = map.cellIndices.NumGridCells;
