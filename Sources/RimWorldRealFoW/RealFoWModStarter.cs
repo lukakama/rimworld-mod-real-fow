@@ -34,6 +34,10 @@ namespace RimWorldRealFoW {
 		}
 
 		public RealFoWModStarter() {
+#if Profile
+			Profiler.enabled = true;
+#endif
+
 			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init.", false, null);
 			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init..", false, null);
 		}

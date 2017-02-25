@@ -220,6 +220,10 @@ namespace RimWorldRealFoW.ThingComps {
 		}
 
 		public void updateFoV(bool forceUpdate = false) {
+#if Profile
+			Profiler.BeginSample("updateFoV");
+#endif
+
 			if (disabled || !setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
 			}
@@ -373,6 +377,9 @@ namespace RimWorldRealFoW.ThingComps {
 					lastFaction = thing.Faction;
 				}
 			}
+#if Profile
+			Profiler.EndSample();
+#endif
 		}
 
 		public int calcPawnSightRange(IntVec3 position, bool forTargeting, bool shouldMove) {

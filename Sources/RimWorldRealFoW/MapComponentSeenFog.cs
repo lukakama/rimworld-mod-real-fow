@@ -190,6 +190,9 @@ namespace RimWorldRealFoW {
 		}
 
 		public void incrementSeen(Faction faction, int idx) {
+#if Profile
+			Profiler.BeginSample("incrementSeen");
+#endif
 			int resIdx = resolveIdx(faction, idx);
 			if ((++factionsShownCells[resIdx] == 1) && faction.IsPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
@@ -217,9 +220,15 @@ namespace RimWorldRealFoW {
 					comps[i].updateVisibility(true);
 				}
 			}
+#if Profile
+			Profiler.EndSample();
+#endif
 		}
 
 		public void decrementSeen(Faction faction, int idx) {
+#if Profile
+			Profiler.BeginSample("decrementSeen");
+#endif
 			int resIdx = resolveIdx(faction, idx);
 			if ((--factionsShownCells[resIdx] == 0) && faction.IsPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
@@ -234,6 +243,9 @@ namespace RimWorldRealFoW {
 					comps[i].updateVisibility(true);
 				}
 			}
+#if Profile
+			Profiler.EndSample();
+#endif
 		}
 	}
 }
