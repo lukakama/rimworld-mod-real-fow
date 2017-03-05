@@ -202,8 +202,8 @@ namespace RimWorldRealFoW.ThingComps {
 				// Worst case scenario using a local reference map with 2 open areas and long view range, computed 4000 times each with vision cleaning 
 				// on each computation (usualy only perimeter updated).
 				// On a Core i5 2500:
-				//  - ~900ms for a colonist: ~0.23ms per raw field of view computation, so 1 FPS drop each ~72 concurrently updating pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
-				//  - ~800ms for a non colonist: ~0.20ms per raw field of view computation, so 1 FPS drop each ~80 concurrently updating pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
+				//  - ~800ms for 4000 colonist: ~0.200ms per raw field of view computation, so FPS starts to drop at ~83 concurrently updating pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
+				//  - ~700ms for 4000 non colonist: ~0.175ms per raw field of view computation, so FPS starts to drop at ~95 concurrently updating pawns (for 60 FPS a frame needs to be rendered in ~16.67ms).
 			}
 		}
 
