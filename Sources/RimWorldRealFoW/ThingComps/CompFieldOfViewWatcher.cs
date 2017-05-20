@@ -460,7 +460,7 @@ namespace RimWorldRealFoW.ThingComps {
 			*/
 
 			// Check if standing on an affect view object.
-			List<CompAffectVision> compsAffectVision = mapCompSeenFog.compAffectVisionGrid[(position.y * mapSizeX) + position.x];
+			List<CompAffectVision> compsAffectVision = mapCompSeenFog.compAffectVisionGrid[(position.z * mapSizeX) + position.x];
 			int compsCount = compsAffectVision.Count;
 			for (int i = 0; i < compsCount; i++) {
 				sightRange *= compsAffectVision[i].Props.fovMultiplier;

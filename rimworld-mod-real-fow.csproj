@@ -131,6 +131,7 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="About\Preview.png" />
+    <Content Include="Defs\ResearchProjects_Tier2_Surveillance.xml" />
     <Content Include="Defs\Buildings_Surveillance.xml" />
     <Content Include="Defs\StarterDef.xml">
       <SubType>Designer</SubType>
