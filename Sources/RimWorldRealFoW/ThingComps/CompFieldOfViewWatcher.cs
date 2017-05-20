@@ -48,7 +48,11 @@ namespace RimWorldRealFoW.ThingComps {
 		private Map map;
 		private MapComponentSeenFog mapCompSeenFog;
 		private ThingGrid thingGrid;
-		private CellIndices cellIndices;
+		private GlowGrid glowGrid;
+		private RoofGrid roofGrid;
+		private WeatherManager weatherManager;
+		private int mapSizeX;
+		private int mapSizeZ;
 
 		private CompHiddenable compHiddenable;
 		private CompGlower compGlower;
@@ -62,9 +66,11 @@ namespace RimWorldRealFoW.ThingComps {
 
 		private Pawn pawn;
 		private ThingDef def;
-		private RaceProperties raceProp;
+		private bool isMechanoid;
+		private PawnCapacitiesHandler capacities;
 		private Building building;
 		private Building_TurretGun turret;
+		private List<Hediff> hediffs;
 
 		private RaceProperties raceProps;
 		private Pawn_PathFollower pawnPather;
@@ -113,17 +119,20 @@ namespace RimWorldRealFoW.ThingComps {
 			if (pawn != null) {
 				pawnPather = pawn.pather;
 				raceProps = pawn.RaceProps;
+				hediffs = pawn.health.hediffSet.hediffs;
+				capacities = pawn.health.capacities;
 			}
 
-			map = parent.Map;
-			mapCompSeenFog = map.getMapComponentSeenFog();
-			thingGrid = map.thingGrid;
-			cellIndices = map.cellIndices;
+			initMap();
 
 			def = parent.def;
-			raceProp = def.race;
-
-			if (raceProp == null || !raceProp.IsMechanoid) {
+			if (def.race != null) {
+				isMechanoid = def.race.IsMechanoid;
+			} else {
+				isMechanoid = false;
+			}
+			
+			if (!isMechanoid) {
 				baseViewRange = NON_MECH_DEFAULT_RANGE;
 			} else {
 				baseViewRange = MECH_DEFAULT_RANGE;
@@ -215,7 +224,12 @@ namespace RimWorldRealFoW.ThingComps {
 				map = parent.Map;
 				mapCompSeenFog = map.getMapComponentSeenFog();
 				thingGrid = map.thingGrid;
-				cellIndices = map.cellIndices;
+				glowGrid = map.glowGrid;
+				roofGrid = map.roofGrid;
+				weatherManager = map.weatherManager;
+
+				mapSizeX = map.Size.x;
+				mapSizeZ = map.Size.z;
 			}
 		}
 
@@ -230,10 +244,13 @@ namespace RimWorldRealFoW.ThingComps {
 
 			Thing thing = base.parent;
 			IntVec3 newPosition = thing.Position;
+
 			if (thing != null && thing.Spawned && thing.Map != null && newPosition != IntVec3.Invalid) {
 				initMap();
 
-				if (thing.Faction != null && (pawn == null || !pawn.Dead)) {
+				Faction newFaction = thing.Faction;
+
+				if (newFaction != null && (pawn == null || !pawn.Dead)) {
 					// Faction things or alive pawn!
 
 					if (pawn != null) {
@@ -247,25 +264,25 @@ namespace RimWorldRealFoW.ThingComps {
 						} else {
 							sightRange = calcPawnSightRange(newPosition, false, false);
 
-							if (pawn.CurJob != null) {
+							if ((pawnPather == null || !pawnPather.MovingNow) && pawn.CurJob != null) {
 								JobDef jobDef = pawn.CurJob.def;
-								if ((pawnPather == null || !pawnPather.MovingNow) && (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt)) {
+								if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
 									isPeeking = true;
 								}
 							}
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
+						if (!calculated || forceUpdate || newFaction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
 							calculated = true;
 							lastPosition = newPosition;
 							lastSightRange = sightRange;
 							lastIsPeeking = isPeeking;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != thing.Faction) {
+							if (lastFaction != null && lastFaction != newFaction) {
 								unseeSeenCells(lastFaction);
 							}
-							lastFaction = thing.Faction;
+							lastFaction = newFaction;
 
 							if (sightRange != -1) {
 								calculateFoV(thing, sightRange, isPeeking);
@@ -286,16 +303,16 @@ namespace RimWorldRealFoW.ThingComps {
 							sightRange = -1;
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || newFaction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
 							lastPosition = newPosition;
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != thing.Faction) {
+							if (lastFaction != null && lastFaction != newFaction) {
 								unseeSeenCells(lastFaction);
 							}
-							lastFaction = thing.Faction;
+							lastFaction = newFaction;
 
 							if (sightRange != -1) {
 								calculateFoV(thing, sightRange, false);
@@ -317,16 +334,16 @@ namespace RimWorldRealFoW.ThingComps {
 							sightRange = -1;
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || newFaction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
 							lastPosition = newPosition;
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != thing.Faction) {
+							if (lastFaction != null && lastFaction != newFaction) {
 								unseeSeenCells(lastFaction);
 							}
-							lastFaction = thing.Faction;
+							lastFaction = newFaction;
 
 							if (sightRange != -1) {
 								calculateFoV(thing, sightRange, false);
@@ -347,16 +364,16 @@ namespace RimWorldRealFoW.ThingComps {
 							sightRange = -1;
 						}
 
-						if (!calculated || forceUpdate || thing.Faction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
+						if (!calculated || forceUpdate || newFaction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange) {
 							calculated = true;
 							lastPosition = newPosition;
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != thing.Faction) {
+							if (lastFaction != null && lastFaction != newFaction) {
 								unseeSeenCells(lastFaction);
 							}
-							lastFaction = thing.Faction;
+							lastFaction = newFaction;
 
 							if (sightRange != -1) {
 								calculateFoV(thing, sightRange, false);
@@ -369,12 +386,12 @@ namespace RimWorldRealFoW.ThingComps {
 						// Disable the component (this thing doesn't need the FoV calculation).
 						disabled = true;
 					}
-				} else if (thing.Faction != lastFaction) {
+				} else if (newFaction != lastFaction) {
 					// Faction change (from a faction to nothing). Unseen and clear old seen cells
 					if (lastFaction != null) {
 						unseeSeenCells(lastFaction);
 					}
-					lastFaction = thing.Faction;
+					lastFaction = newFaction;
 				}
 			}
 #if Profile
@@ -392,10 +409,9 @@ namespace RimWorldRealFoW.ThingComps {
 
 			initMap();
 
-			bool sleeping = (raceProp == null || !raceProp.IsMechanoid) && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
+			bool sleeping = !isMechanoid && pawn.CurJob != null && pawn.jobs.curDriver.asleep;
 
 			if (!shouldMove && !sleeping && (pawnPather == null || !pawnPather.MovingNow)) {
-
 				Verb attackVerb = null;
 				if (pawn.CurJob != null) {
 					JobDef jobDef = pawn.CurJob.def;
@@ -418,18 +434,18 @@ namespace RimWorldRealFoW.ThingComps {
 						int ticksToSearch = (attackVerb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((attackVerbRange - baseViewRange) / 2);
 
 						if (ticksStanding >= ticksToSearch) {
-							sightRange = attackVerbRange * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+							sightRange = attackVerbRange * capacities.GetEfficiency(PawnCapacityDefOf.Sight);
 						} else {
 							int incValue = Mathf.RoundToInt((attackVerbRange - baseViewRange) * ((float) ticksStanding / ticksToSearch));
 
-							sightRange = (baseViewRange + incValue) * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+							sightRange = (baseViewRange + incValue) * capacities.GetEfficiency(PawnCapacityDefOf.Sight);
 						}
 					}
 				}
 			}
 
 			if (sightRange == 0f) {
-				sightRange = baseViewRange * pawn.health.capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+				sightRange = baseViewRange * capacities.GetEfficiency(PawnCapacityDefOf.Sight);
 			}
 
 			if (!forTargeting && sleeping) {
@@ -444,35 +460,34 @@ namespace RimWorldRealFoW.ThingComps {
 			*/
 
 			// Check if standing on an affect view object.
-			List<CompAffectVision> compsAffectVision = mapCompSeenFog.compAffectVisionGrid[cellIndices.CellToIndex(position)];
+			List<CompAffectVision> compsAffectVision = mapCompSeenFog.compAffectVisionGrid[(position.y * mapSizeX) + position.x];
 			int compsCount = compsAffectVision.Count;
 			for (int i = 0; i < compsCount; i++) {
 				sightRange *= compsAffectVision[i].Props.fovMultiplier;
 			}
 
 			// Additional dark and weather debuff.
-			if (raceProp == null || !raceProp.IsMechanoid) {
-				float currGlow = map.glowGrid.GameGlowAt(position);
+			if (!isMechanoid) {
+				float currGlow = glowGrid.GameGlowAt(position);
 				if (currGlow != 1f) {
-					int darkModifier = 60;
+					float darkModifier = 0.6f;
 					// Each bionic eye reduce the dark debuff by 20.
-					List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 					int hediffsCount = hediffs.Count;
 					for (int i = 0; i < hediffsCount; i++) {
 						if (hediffs[i].def == HediffDefOf.BionicEye) {
-							darkModifier += 20;
+							darkModifier += 0.2f;
 						}
 					}
 
 					// Apply only if to debuff.
-					if (darkModifier < 100) {
+					if (darkModifier < 1f) {
 						// Adjusted to glow (100% full light - 60% dark).
-						sightRange *= Mathf.Lerp((darkModifier / 100f), 1f, currGlow);
+						sightRange *= Mathf.Lerp(darkModifier, 1f, currGlow);
 					}
 				}
 
-				if (!map.roofGrid.Roofed(position.x, position.z)) {
-					float weatherFactor = map.weatherManager.CurWeatherAccuracyMultiplier;
+				if (!roofGrid.Roofed(position.x, position.z)) {
+					float weatherFactor = weatherManager.CurWeatherAccuracyMultiplier;
 					if (weatherFactor != 1f) {
 						// Weather factor is applied by half.
 						sightRange *= Mathf.Lerp(0.5f, 1f, weatherFactor);
@@ -499,8 +514,8 @@ namespace RimWorldRealFoW.ThingComps {
 			//	Log.Message("calculateFoV: " + thing.ThingID);
 			//}
 
-			int mapSizeX = map.Size.x;
-			int mapSizeZ = map.Size.z;
+			int mapSizeX = this.mapSizeX;
+			int mapSizeZ = this.mapSizeZ;
 
 			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
 			bool[] newViewMap = viewMapSwitch ? this.viewMap2 : this.viewMap1;
