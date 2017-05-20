@@ -9,35 +9,37 @@ namespace RimWorldRealFoW.ThingComps {
 		private Map map;
 		private MapComponentSeenFog mapCompSeenFog;
 
-		private bool lastCanBeSeenOver;
-		private Building b;
+		private bool lastIsViewBlocker = false;
+
+		private bool blockLight = false;
+
+		private Building b = null;
 
 		public override void PostSpawnSetup() {
 			base.PostSpawnSetup();
 
+			blockLight = parent.def.blockLight;
+
 			b = parent as Building;
 
-			if (b != null) {
-				// Default as see-through.
-				lastCanBeSeenOver = true;
-
-				updateViewBlocker();
+			if (blockLight && (b != null)) {
+				updateIsViewBlocker();
 			}
 		}
 
 		public override void ReceiveCompSignal(string signal) {
 			base.ReceiveCompSignal(signal);
 
-			if (b != null) {
-				updateViewBlocker();
+			if (blockLight && (b != null)) {
+				updateIsViewBlocker();
 			}
 		}
 
 		public override void CompTick() {
 			base.CompTick();
 
-			if (b != null) {
-				updateViewBlocker();
+			if (blockLight && (b != null) && (Find.TickManager.TicksGame % 30 == 0)) {
+				updateIsViewBlocker();
 			}
 		}
 
@@ -45,61 +47,55 @@ namespace RimWorldRealFoW.ThingComps {
 			base.PostDeSpawn(map);
 
 			// When de-spawn, if the thing was blocking the view, then trigger a FoV update for near objects.
-			if (b != null && !lastCanBeSeenOver) {
-				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
-
-				int mapSizeZ = map.Size.z;
-				CellRect occupiedRect = b.OccupiedRect();
-				for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
-					for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
-						viewBlockerCells[(z * mapSizeZ) + x] = false;
-					}
+			if (lastIsViewBlocker) {
+				if (this.map != map) {
+					this.map = map;
+					mapCompSeenFog = map.getMapComponentSeenFog();
 				}
 
-				if (Current.ProgramState == ProgramState.Playing) {
-					if (parent.Map != null) {
-						List<Thing> things = map.listerThings.AllThings;
-						for (int i = 0; i < things.Count; i++) {
-							ThingWithComps thing = things[i] as ThingWithComps;
-							if (thing != null) {
-								CompFieldOfViewWatcher cmpFov = thing.GetComp<CompFieldOfViewWatcher>();
-								if (cmpFov != null && b.Position.InHorDistOf(thing.Position, cmpFov.sightRange)) {
-									cmpFov.updateFoV(true);
-								}
-							}
-						}
-					}
-				}
+				updateViewBlockerCells(false);
 			}
 		}
 
-		private void updateViewBlocker() {
-			if (lastCanBeSeenOver != b.CanBeSeenOver()) {
-				lastCanBeSeenOver = b.CanBeSeenOver();
+		private void updateIsViewBlocker() {
+			bool isViewBlocker = blockLight && !b.CanBeSeenOver();
 
-				map = parent.Map;
-				mapCompSeenFog = map.getMapComponentSeenFog();
+			if (lastIsViewBlocker != isViewBlocker) {
+				lastIsViewBlocker = isViewBlocker;
 
-				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
-
-				int mapSizeZ = map.Size.z;
-				CellRect occupiedRect = b.OccupiedRect();
-				for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
-					for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
-						viewBlockerCells[(z * mapSizeZ) + x] = !b.CanBeSeenOver();
-					}
+				if (map != parent.Map) {
+					map = parent.Map;
+					mapCompSeenFog = map.getMapComponentSeenFog();
 				}
 
-				if (Current.ProgramState == ProgramState.Playing) {
-					if (parent.Map != null) {
-						List<Thing> things = parent.Map.listerThings.AllThings;
-						for (int i = 0; i < things.Count; i++) {
-							ThingWithComps thing = things[i] as ThingWithComps;
-							if (thing != null) {
-								CompFieldOfViewWatcher cmpFov = thing.GetComp<CompFieldOfViewWatcher>();
-								if (cmpFov != null && b.Position.InHorDistOf(thing.Position, cmpFov.sightRange)) {
-									cmpFov.updateFoV(true);
-								}
+				updateViewBlockerCells(isViewBlocker);
+			}
+		}
+
+		private void updateViewBlockerCells(bool blockView) {
+			bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
+
+			int mapSizeZ = map.Size.z;
+			int mapSizeX = map.Size.x;
+
+			CellRect occupiedRect = parent.OccupiedRect();
+			for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
+				for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
+					if (x >= 0 && z >= 0 && x <= mapSizeX && z <= mapSizeZ) {
+						viewBlockerCells[(z * mapSizeZ) + x] = blockView;
+					}
+				}
+			}
+
+			if (Current.ProgramState == ProgramState.Playing) {
+				if (map != null) {
+					List<Thing> things = map.listerThings.AllThings;
+					for (int i = 0; i < things.Count; i++) {
+						ThingWithComps thing = things[i] as ThingWithComps;
+						if (thing != null) {
+							CompFieldOfViewWatcher cmpFov = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
+							if (cmpFov != null && parent.Position.InHorDistOf(thing.Position, cmpFov.sightRange)) {
+								cmpFov.updateFoV(true);
 							}
 						}
 					}
