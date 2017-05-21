@@ -639,14 +639,27 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
 
-			if (viewRect.maxX >= 0 && viewRect.minX >= 0 && viewRect.maxZ >= 0 && viewRect.minZ >= 0 && viewMap.Length > 0) {
+			if (viewMap.Length > 0) {
+				int viewRectMinZ = viewRect.minZ;
+				int viewRectMaxZ = viewRect.maxZ;
+				int viewRectMinX = viewRect.minX;
+				int viewRectMaxX = viewRect.maxX;
+
 				int mapX = map.Size.x;
+				int mapZ = map.Size.z;
 
 				int viewWidth = viewRect.Width;
 				int viewArea = viewRect.Area;
+
+				int x;
+				int z;
 				for (int i = 0; i < viewArea; i++) {
 					if (viewMap[i]) {
-						mapCompSeenFog.decrementSeen(faction, (((i / viewWidth) + viewRect.minZ) * mapX) + ((i % viewWidth) + viewRect.minX));
+						x = viewRectMinX + (i % viewWidth);
+						z = viewRectMinZ + (i / viewWidth);
+						if (z >= 0 && z <= mapZ && x >= 0 && x <= mapX) {
+							mapCompSeenFog.decrementSeen(faction, (z * mapX) + x);
+						}
 						viewMap[i] = false;
 					}
 				}
