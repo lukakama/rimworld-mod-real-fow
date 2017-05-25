@@ -71,9 +71,9 @@ namespace RimWorldRealFoW.Detours {
 			if (!_this.IsSelected(obj)) {
 				if (map != Current.Game.VisibleMap) {
 					Current.Game.VisibleMap = map;
-					SoundDefOf.MapSelected.PlayOneShotOnCamera();
-					IntVec3 intLoc = (thing == null) ? ((Zone) obj).Cells[0] : thing.Position;
-					Find.CameraDriver.JumpTo(intLoc);
+					SoundDefOf.MapSelected.PlayOneShotOnCamera(null);
+					IntVec3 cell = (thing == null) ? ((Zone) obj).Cells[0] : thing.Position;
+					Find.CameraDriver.JumpToVisibleMapLoc(cell);
 				}
 				if (playSound) {
 					ReflectionUtils.execInstancePrivate(_this, "PlaySelectionSoundFor", obj);

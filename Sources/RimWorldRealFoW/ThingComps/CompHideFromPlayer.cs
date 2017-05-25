@@ -38,8 +38,8 @@ namespace RimWorldRealFoW.ThingComps {
 		private bool isSaveable;
 		private bool saveCompressible;
 
-		public override void PostSpawnSetup() {
-			base.PostSpawnSetup();
+		public override void PostSpawnSetup(bool respawningAfterLoad) {
+			base.PostSpawnSetup(respawningAfterLoad);
 
 			setupDone = true;
 
@@ -62,7 +62,7 @@ namespace RimWorldRealFoW.ThingComps {
 		public override void PostExposeData() {
 			base.PostExposeData();
 
-			Scribe_Values.LookValue<bool>(ref this.seenByPlayer, "seenByPlayer", false, false);
+			Scribe_Values.Look<bool>(ref this.seenByPlayer, "seenByPlayer", false, false);
 		}
 
 		public override void ReceiveCompSignal(string signal) {

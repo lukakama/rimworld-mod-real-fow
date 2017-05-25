@@ -86,9 +86,9 @@ namespace RimWorldRealFoW.ThingComps {
 				return lastSightRange;
 			}
 		}
-		
-		public override void PostSpawnSetup() {
-			base.PostSpawnSetup();
+
+		public override void PostSpawnSetup(bool respawningAfterLoad) {
+			base.PostSpawnSetup(respawningAfterLoad);
 
 			setupDone = true;
 
@@ -148,8 +148,8 @@ namespace RimWorldRealFoW.ThingComps {
 		public override void PostExposeData() {
 			base.PostExposeData();
 
-			Scribe_Values.LookValue<int>(ref this.lastMovementTick, "fovLastMovementTick", Find.TickManager.TicksGame, false);
-			Scribe_Values.LookValue<bool>(ref this.disabled, "fovDisabled", false, false);
+			Scribe_Values.Look<int>(ref this.lastMovementTick, "fovLastMovementTick", Find.TickManager.TicksGame, false);
+			Scribe_Values.Look<bool>(ref this.disabled, "fovDisabled", false, false);
 		}
 
 		public override void ReceiveCompSignal(string signal) {
@@ -434,18 +434,18 @@ namespace RimWorldRealFoW.ThingComps {
 						int ticksToSearch = (attackVerb.verbProps.warmupTime * statValue).SecondsToTicks() * Mathf.RoundToInt((attackVerbRange - baseViewRange) / 2);
 
 						if (ticksStanding >= ticksToSearch) {
-							sightRange = attackVerbRange * capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+							sightRange = attackVerbRange * capacities.GetLevel(PawnCapacityDefOf.Sight);
 						} else {
 							int incValue = Mathf.RoundToInt((attackVerbRange - baseViewRange) * ((float) ticksStanding / ticksToSearch));
 
-							sightRange = (baseViewRange + incValue) * capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+							sightRange = (baseViewRange + incValue) * capacities.GetLevel(PawnCapacityDefOf.Sight);
 						}
 					}
 				}
 			}
 
 			if (sightRange == 0f) {
-				sightRange = baseViewRange * capacities.GetEfficiency(PawnCapacityDefOf.Sight);
+				sightRange = baseViewRange * capacities.GetLevel(PawnCapacityDefOf.Sight);
 			}
 
 			if (!forTargeting && sleeping) {

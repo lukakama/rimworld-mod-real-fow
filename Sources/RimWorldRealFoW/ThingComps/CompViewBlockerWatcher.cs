@@ -15,8 +15,8 @@ namespace RimWorldRealFoW.ThingComps {
 
 		private Building b = null;
 
-		public override void PostSpawnSetup() {
-			base.PostSpawnSetup();
+		public override void PostSpawnSetup(bool respawningAfterLoad) {
+			base.PostSpawnSetup(respawningAfterLoad);
 
 			blockLight = parent.def.blockLight;
 

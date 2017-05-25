@@ -3,16 +3,16 @@ using Verse;
 
 namespace RimWorldRealFoW.Detours {
 	public static class _LetterStack {
-		public static void ReceiveLetter(this LetterStack _this, string label, string text, LetterType type, GlobalTargetInfo letterLookTarget, string debugText = null) {
-			if (letterLookTarget.HasThing) {
-				Thing thing = letterLookTarget.Thing;
+		public static void ReceiveLetter(this LetterStack _this, string label, string text, LetterDef textLetterDef, GlobalTargetInfo lookTarget, string debugInfo = null) {
+			if (lookTarget.HasThing) {
+				Thing thing = lookTarget.Thing;
 				if (thing.Faction == null || !thing.Faction.IsPlayer) {
-					letterLookTarget = new GlobalTargetInfo(thing.Position, thing.Map);
+					lookTarget = new GlobalTargetInfo(thing.Position, thing.Map);
 				}
 			}
 
-			Letter let = new Letter(label, text, type, letterLookTarget);
-			_this.ReceiveLetter(let, debugText);
+			ChoiceLetter let = LetterMaker.MakeLetter(label, text, textLetterDef, lookTarget);
+			_this.ReceiveLetter(let, debugInfo);
 		}
 	}
 }

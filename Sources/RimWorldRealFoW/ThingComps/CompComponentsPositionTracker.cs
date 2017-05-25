@@ -33,8 +33,8 @@ namespace RimWorldRealFoW.ThingComps {
 		private bool setupDone = false;
 		private bool calculated = false;
 
-		public override void PostSpawnSetup() {
-			base.PostSpawnSetup();
+		public override void PostSpawnSetup(bool respawningAfterLoad) {
+			base.PostSpawnSetup(respawningAfterLoad);
 
 			setupDone = true;
 

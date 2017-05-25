@@ -67,7 +67,7 @@ namespace RimWorldRealFoW {
 			compHideFromPlayerGrid = new List<CompHideFromPlayer>[mapCellLength];
 			compAffectVisionGrid = new List<CompAffectVision>[mapCellLength];
 			for (int i = 0; i < mapCellLength; i++) {
-				idxToCellCache[i] = CellIndicesUtility.IndexToCell(i, mapSizeX, mapSizeZ);
+				idxToCellCache[i] = CellIndicesUtility.IndexToCell(i, mapSizeX);
 
 				compHideFromPlayerGrid[i] = new List<CompHideFromPlayer>(16);
 				compAffectVisionGrid[i] = new List<CompAffectVision>(16);
@@ -150,7 +150,7 @@ namespace RimWorldRealFoW {
 
 				for (int i = 0; i < mapCellLength; i++) {
 					if (knownCells[i]) {
-						IntVec3 cell = CellIndicesUtility.IndexToCell(i, mapSizeX, mapSizeZ);
+						IntVec3 cell = CellIndicesUtility.IndexToCell(i, mapSizeX);
 						foreach (Thing t in map.thingGrid.ThingsListAtFast(cell)) {
 							CompHideFromPlayer comp = (CompHideFromPlayer) t.TryGetComp(CompHideFromPlayer.COMP_DEF);
 							if (comp != null) {

@@ -19,12 +19,36 @@ using Verse;
 
 namespace RimWorldRealFoW.Detours {
 	static class _Verb {
-		private static bool CanHitCellFromCellIgnoringRange(this Verb _this, IntVec3 sourceSq, IntVec3 targetLoc) {
+		private static bool CanHitCellFromCellIgnoringRange(this Verb _this, IntVec3 sourceSq, IntVec3 targetLoc, bool includeCorners = false) {
 			if (_this.caster.Faction != null) {
-				return (!_this.verbProps.mustCastOnOpenGround || (targetLoc.Standable(_this.caster.Map) && !_this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) && (!_this.verbProps.requireLineOfSight ||
-					(GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true) && (seenByFaction(_this.caster, targetLoc) || fovLineOfSight(sourceSq, targetLoc, _this.caster))));
+				if (_this.verbProps.mustCastOnOpenGround && (!targetLoc.Standable(_this.caster.Map) || _this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) {
+					return false;
+				}
+				if (_this.verbProps.requireLineOfSight) {
+					if (!includeCorners) {
+						if (!GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true, null, 0, 0) || (!seenByFaction(_this.caster, targetLoc) && !fovLineOfSight(sourceSq, targetLoc, _this.caster))) {
+							return false;
+						}
+					} else if (!GenSight.LineOfSightToEdges(sourceSq, targetLoc, _this.caster.Map, true, null) || (!seenByFaction(_this.caster, targetLoc) && !fovLineOfSight(sourceSq, targetLoc, _this.caster))) {
+						return false;
+					}
+				}
+				return true;
 			}
-			return (!_this.verbProps.mustCastOnOpenGround || (targetLoc.Standable(_this.caster.Map) && !_this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) && (!_this.verbProps.requireLineOfSight || GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true));
+
+			if (_this.verbProps.mustCastOnOpenGround && (!targetLoc.Standable(_this.caster.Map) || _this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) {
+				return false;
+			}
+			if (_this.verbProps.requireLineOfSight) {
+				if (!includeCorners) {
+					if (!GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true, null, 0, 0)) {
+						return false;
+					}
+				} else if (!GenSight.LineOfSightToEdges(sourceSq, targetLoc, _this.caster.Map, true, null)) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		private static bool seenByFaction(Thing thing, IntVec3 targetLoc) {

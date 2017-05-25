@@ -35,7 +35,7 @@ namespace RimWorldRealFoW.ThingComps {
 					parent.Map.dynamicDrawManager.DeRegisterDrawable(parent);
 				}
 				if (parent.def.hasTooltip) {
-					parent.Map.tooltipGiverList.DeregisterTooltipGiver(parent);
+					parent.Map.tooltipGiverList.Notify_ThingDespawned(parent);
 				}
 
 				Selector selector = Find.Selector;
@@ -56,7 +56,7 @@ namespace RimWorldRealFoW.ThingComps {
 					parent.Map.dynamicDrawManager.RegisterDrawable(parent);
 				}
 				if (parent.def.hasTooltip) {
-					parent.Map.tooltipGiverList.RegisterTooltipGiver(parent);
+					parent.Map.tooltipGiverList.Notify_ThingSpawned(parent);
 				}
 
 				// Mark everything to be updated
