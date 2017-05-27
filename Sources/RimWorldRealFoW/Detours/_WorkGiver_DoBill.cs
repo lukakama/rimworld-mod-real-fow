@@ -23,7 +23,7 @@ namespace RimWorldRealFoW.Detours {
 			}
 			ReflectionUtils.execStaticPrivate(WorkGiver_DoBill_Type, "MakeIngredientsListInProcessingOrder", ReflectionUtils.getStaticPrivateValue<List<IngredientCount>>(WorkGiver_DoBill_Type, "ingredientsOrdered"), bill);
 			ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "relevantThings").Clear();
-			ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "processedThings").Clear();
+			ReflectionUtils.getStaticPrivateValue<HashSet<Thing>>(WorkGiver_DoBill_Type, "processedThings").Clear();
 			bool foundAll = false;
 			Predicate<Thing> baseValidator = (Thing t) => t.Spawned && !t.IsForbidden(pawn) && (float) (t.Position - billGiver.Position).LengthHorizontalSquared < bill.ingredientSearchRadius * bill.ingredientSearchRadius && bill.IsFixedOrAllowedIngredient(t) && bill.recipe.ingredients.Any((IngredientCount ingNeed) => ingNeed.filter.Allows(t)) && pawn.CanReserve(t, 1, -1, null, false) && t.fowIsVisible();
 			bool billGiverIsPawn = billGiver is Pawn;
@@ -37,16 +37,16 @@ namespace RimWorldRealFoW.Detours {
 			RegionEntryPredicate entryCondition = (Region from, Region r) => r.Allows(traverseParams, false);
 			int adjacentRegionsAvailable = rootReg.Neighbors.Count((Region region) => entryCondition(rootReg, region));
 			int regionsProcessed = 0;
-			ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "processedThings").AddRange(ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "relevantThings"));
+			ReflectionUtils.getStaticPrivateValue<HashSet<Thing>>(WorkGiver_DoBill_Type, "processedThings").AddRange(ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "relevantThings"));
 			RegionProcessor regionProcessor = delegate (Region r) {
 				List<Thing> list = r.ListerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.HaulableEver));
 				for (int i = 0; i < list.Count; i++) {
 					Thing thing = list[i];
-					if (!ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "processedThings").Contains(thing)) {
+					if (!ReflectionUtils.getStaticPrivateValue<HashSet<Thing>>(WorkGiver_DoBill_Type, "processedThings").Contains(thing)) {
 						if (ReachabilityWithinRegion.ThingFromRegionListerReachable(thing, r, PathEndMode.ClosestTouch, pawn)) {
 							if (baseValidator(thing) && (!thing.def.IsMedicine || !billGiverIsPawn)) {
 								ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "newRelevantThings").Add(thing);
-								ReflectionUtils.getStaticPrivateValue<List<Thing>>(WorkGiver_DoBill_Type, "processedThings").Add(thing);
+								ReflectionUtils.getStaticPrivateValue<HashSet<Thing>>(WorkGiver_DoBill_Type, "processedThings").Add(thing);
 							}
 						}
 					}
