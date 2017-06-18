@@ -18,9 +18,7 @@ using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW.SectionLayers {
-
 	public class SectionLayer_FoVLayer : SectionLayer {
-		// TODO: Link to preferences.
 		public static bool prefEnableFade = true;
 		public static float prefFadeSpeedMult = 2;
 		public static byte prefFogAlpha = 86;

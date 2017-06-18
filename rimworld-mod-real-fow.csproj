@@ -35,7 +35,7 @@
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Profile|AnyCPU'">
-    <OutputPath>bin\Profile\</OutputPath>
+    <OutputPath>..\..\..\SteamLibrary\SteamApps\common\RimWorld\Mods\RealFoW\Assemblies\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -69,14 +69,19 @@
     <Compile Include="Sources\RimWorldRealFoW\Detours\_EnvironmentInspectDrawer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_HaulAIUtility.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_InstallationDesignatorDatabase.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_SectionLayer_ThingsPowerGrid.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_SectionLayer_ThingsGeneral.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_Pawn.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Install.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Build.cs" />
     <Compile Include="Sources\RimWorldRealFoW\RealFoWModSettings.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompComponentsPositionTracker.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompMainComponent.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompComponentsPositionTracker.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompProvideVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompAffectVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\Properties\CompProperties_AffectVision.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\Properties\CompProperties_ProvideVision.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\ThingSubComp.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Utils\MapUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Utils\FoWThingUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_LetterStack.cs" />
@@ -99,17 +104,15 @@
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Claim.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_AreaNoRoofExpand.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_AreaBuildRoofExpand.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompViewBlockerWatcher.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompViewBlockerWatcher.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_GenMapUI.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_SectionLayer_Things.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompHideFromPlayer.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompHideFromPlayer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\MapComponentSeenFog.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompHiddenable.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompFieldOfViewWatcher.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompHiddenable.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompFieldOfViewWatcher.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Utils\ReflectionUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\PatchedThings\FoW_MoteBubble.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MouseoverReadout.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_PawnUIOverlay.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Selector.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\Detours.cs" />
     <Compile Include="Sources\RimWorldRealFoW\SectionLayers\SectionLayer_FoVLayer.cs" />
@@ -152,6 +155,7 @@
       xcopy /Q /Y /S /I "$(ProjectDir)Defs\*" "$(TargetDir)..\Defs"
       xcopy /Q /Y /S /I "$(ProjectDir)Textures\*" "$(TargetDir)..\Textures"
       xcopy /Q /Y /S /I "$(ProjectDir)Languages\*" "$(TargetDir)..\Languages"
+      xcopy /Q /Y /S /I "$(ProjectDir)Sources\RimWorldRealFoWUnity\Assets\Bundles\*" "$(TargetDir)..\AssetsBundles"
     </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>

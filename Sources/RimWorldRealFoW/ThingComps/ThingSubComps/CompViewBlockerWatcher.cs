@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using Verse;
 
-namespace RimWorldRealFoW.ThingComps {
-	public class CompViewBlockerWatcher : ThingComp {
-		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompViewBlockerWatcher));
-
+namespace RimWorldRealFoW.ThingComps.ThingSubComps {
+	public class CompViewBlockerWatcher : ThingSubComp {
 		private Map map;
 		private MapComponentSeenFog mapCompSeenFog;
 
@@ -93,9 +91,12 @@ namespace RimWorldRealFoW.ThingComps {
 					for (int i = 0; i < things.Count; i++) {
 						ThingWithComps thing = things[i] as ThingWithComps;
 						if (thing != null) {
-							CompFieldOfViewWatcher cmpFov = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
-							if (cmpFov != null && parent.Position.InHorDistOf(thing.Position, cmpFov.sightRange)) {
-								cmpFov.updateFoV(true);
+							CompMainComponent compMain = (CompMainComponent)thing.TryGetComp(CompMainComponent.COMP_DEF);
+							if (compMain != null) {
+								CompFieldOfViewWatcher cmpFov = compMain.compFieldOfViewWatcher;
+								if (cmpFov != null && parent.Position.InHorDistOf(thing.Position, cmpFov.sightRange)) {
+									cmpFov.updateFoV(true);
+								}
 							}
 						}
 					}

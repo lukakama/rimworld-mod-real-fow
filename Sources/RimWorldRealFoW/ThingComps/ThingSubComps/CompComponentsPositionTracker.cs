@@ -14,11 +14,12 @@
 using RimWorldRealFoW.Utils;
 using Verse;
 
-namespace RimWorldRealFoW.ThingComps {
-	public class CompComponentsPositionTracker : ThingComp {
-		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompComponentsPositionTracker));
+namespace RimWorldRealFoW.ThingComps.ThingSubComps {
+	public class CompComponentsPositionTracker : ThingSubComp {
+		private static readonly IntVec3 iv3Invalid = IntVec3.Invalid;
+		private static readonly Rot4 r4Invalid = Rot4.Invalid;
 
-		IntVec2 size;
+		private IntVec2 size;
 
 		private IntVec3 lastPosition;
 		private Rot4 lastRotation;
@@ -34,19 +35,19 @@ namespace RimWorldRealFoW.ThingComps {
 		private bool calculated = false;
 
 		public override void PostSpawnSetup(bool respawningAfterLoad) {
-			base.PostSpawnSetup(respawningAfterLoad);
-
 			setupDone = true;
 
 			ThingDef def = parent.def;
 			size = def.size;
 			isOneCell = size.z == 1 && size.x == 1;
-
-			compHideFromPlayer = parent.TryGetComp<CompHideFromPlayer>();
+			CompMainComponent mainComp = (CompMainComponent) parent.TryGetComp(CompMainComponent.COMP_DEF);
+			if (mainComp != null) {
+				compHideFromPlayer = mainComp.compHideFromPlayer;
+			}
 			compAffectVision = parent.TryGetComp<CompAffectVision>();
 
-			lastPosition = IntVec3.Invalid;
-			lastRotation = Rot4.Invalid;
+			lastPosition = iv3Invalid;
+			lastRotation = r4Invalid;
 
 			updatePosition();
 		}
@@ -75,7 +76,7 @@ namespace RimWorldRealFoW.ThingComps {
 			Thing thing = base.parent;
 			IntVec3 newPosition = thing.Position;
 			Rot4 newRotation = thing.Rotation;
-			if (thing != null && thing.Spawned && thing.Map != null && newPosition != IntVec3.Invalid && (isOneCell || newRotation != Rot4.Invalid) && 
+			if (thing != null && thing.Spawned && thing.Map != null && newPosition != iv3Invalid && (isOneCell || newRotation != r4Invalid) && 
 					(compHideFromPlayer != null || compAffectVision != null)) {
 				if (map != thing.Map) {
 					map = thing.Map;
@@ -103,10 +104,12 @@ namespace RimWorldRealFoW.ThingComps {
 						}
 
 					} else {
-						if (lastPosition != IntVec3.Invalid && lastRotation != Rot4.Invalid) {
+						int z;
+						int x;
+						if (lastPosition != iv3Invalid && lastRotation != r4Invalid) {
 							CellRect cellRect = GenAdj.OccupiedRect(lastPosition, lastRotation, size);
-							for (int z = cellRect.minZ; z <= cellRect.maxZ; z++) {
-								for (int x = cellRect.minX; x <= cellRect.maxX; x++) {
+							for (z = cellRect.minZ; z <= cellRect.maxZ; z++) {
+								for (x = cellRect.minX; x <= cellRect.maxX; x++) {
 									if (compHideFromPlayer != null) {
 										mapCompSeenFog.deregisterCompHideFromPlayerPosition(compHideFromPlayer, x, z);
 									}
@@ -117,10 +120,10 @@ namespace RimWorldRealFoW.ThingComps {
 							}
 						}
 
-						if (newPosition != IntVec3.Invalid && newRotation != Rot4.Invalid) {
+						if (newPosition != iv3Invalid && newRotation != r4Invalid) {
 							CellRect cellRect = GenAdj.OccupiedRect(newPosition, newRotation, size);
-							for (int z = cellRect.minZ; z <= cellRect.maxZ; z++) {
-								for (int x = cellRect.minX; x <= cellRect.maxX; x++) {
+							for (z = cellRect.minZ; z <= cellRect.maxZ; z++) {
+								for (x = cellRect.minX; x <= cellRect.maxX; x++) {
 									if (compHideFromPlayer != null) {
 										mapCompSeenFog.registerCompHideFromPlayerPosition(compHideFromPlayer, x, z);
 									}
@@ -148,10 +151,12 @@ namespace RimWorldRealFoW.ThingComps {
 					mapCompSeenFog.deregisterCompHideFromPlayerPosition(compHideFromPlayer, lastPosition.x, lastPosition.z);
 					mapCompSeenFog.deregisterCompAffectVisionPosition(compAffectVision, lastPosition.x, lastPosition.z);
 
-				} else if (lastPosition != IntVec3.Invalid && lastRotation != Rot4.Invalid) {
+				} else if (lastPosition != iv3Invalid && lastRotation != r4Invalid) {
+					int z;
+					int x;
 					CellRect cellRect = GenAdj.OccupiedRect(lastPosition, lastRotation, size);
-					for (int z = cellRect.minZ; z <= cellRect.maxZ; z++) {
-						for (int x = cellRect.minX; x <= cellRect.maxX; x++) {
+					for (z = cellRect.minZ; z <= cellRect.maxZ; z++) {
+						for (x = cellRect.minX; x <= cellRect.maxX; x++) {
 							if (compHideFromPlayer != null) {
 								mapCompSeenFog.deregisterCompHideFromPlayerPosition(compHideFromPlayer, x, z);
 							}

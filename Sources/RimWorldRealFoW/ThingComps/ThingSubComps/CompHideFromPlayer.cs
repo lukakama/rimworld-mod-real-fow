@@ -15,9 +15,10 @@ using RimWorld;
 using RimWorldRealFoW.Utils;
 using Verse;
 
-namespace RimWorldRealFoW.ThingComps {
-	public class CompHideFromPlayer : ThingComp {
-		public static readonly CompProperties COMP_DEF = new CompProperties(typeof(CompHideFromPlayer));
+namespace RimWorldRealFoW.ThingComps.ThingSubComps {
+	public class CompHideFromPlayer : ThingSubComp {
+		private static readonly IntVec3 iv3Invalid = IntVec3.Invalid;
+		private static readonly Rot4 r4Invalid = Rot4.Invalid;
 
 		private bool calculated;
 		private IntVec3 lastPosition;
@@ -32,7 +33,7 @@ namespace RimWorldRealFoW.ThingComps {
 
 		private bool setupDone = false;
 		private bool seenByPlayer;
-		private Pawn pawn;
+		private bool isPawn;
 		private IntVec2 size;
 
 		private bool isSaveable;
@@ -44,17 +45,17 @@ namespace RimWorldRealFoW.ThingComps {
 			setupDone = true;
 
 			calculated = false;
-			lastPosition = IntVec3.Invalid;
-			lastRotation = Rot4.Invalid;
+			lastPosition = iv3Invalid;
+			lastRotation = r4Invalid;
 
-			pawn = parent as Pawn;
+			isPawn = parent.def.category == ThingCategory.Pawn;
 			size = parent.def.size;
 			isOneCell = size.z == 1 && size.x == 1;
 
 			isSaveable = parent.def.isSaveable;
 			saveCompressible = parent.def.saveCompressible;
 
-			compHiddenable = parent.GetComp<CompHiddenable>();
+			compHiddenable = parent.TryGetCompHiddenable();
 
 			updateVisibility(false);
 		}
@@ -95,7 +96,7 @@ namespace RimWorldRealFoW.ThingComps {
 			Thing thing = base.parent;
 			IntVec3 newPosition = thing.Position;
 			Rot4 newRotation = thing.Rotation;
-			if (thing != null && thing.Spawned && thing.Map != null && newPosition != IntVec3.Invalid && (isOneCell || newRotation != Rot4.Invalid)) {
+			if (thing != null && thing.Spawned && thing.Map != null && newPosition != iv3Invalid && (isOneCell || newRotation != r4Invalid)) {
 				if (map != thing.Map) {
 					map = thing.Map;
 					fogGrid = map.fogGrid;
@@ -119,9 +120,9 @@ namespace RimWorldRealFoW.ThingComps {
 					if (mapCompSeenFog != null && !fogGrid.IsFogged(lastPosition)) {
 						if (isSaveable && !saveCompressible) {
 							if (!belongToPlayer) {
-								if (pawn != null && !hasPartShownToPlayer()) {
+								if (isPawn && !hasPartShownToPlayer()) {
 									compHiddenable.hide();
-								} else if (pawn == null && !seenByPlayer && !hasPartShownToPlayer()) {
+								} else if (!isPawn && !seenByPlayer && !hasPartShownToPlayer()) {
 									compHiddenable.hide();
 								} else {
 									seenByPlayer = true;

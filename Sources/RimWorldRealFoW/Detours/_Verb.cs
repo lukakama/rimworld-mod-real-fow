@@ -14,7 +14,9 @@
 using RimWorld;
 using RimWorldRealFoW.ShadowCasters;
 using RimWorldRealFoW.ThingComps;
+using RimWorldRealFoW.ThingComps.ThingSubComps;
 using RimWorldRealFoW.Utils;
+using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW.Detours {
@@ -75,9 +77,10 @@ namespace RimWorldRealFoW.Detours {
 			}
 
 			MapComponentSeenFog seenFog = thing.Map.getMapComponentSeenFog();
-			CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
+			CompMainComponent compMain = (CompMainComponent) thing.TryGetComp(CompMainComponent.COMP_DEF);
+			CompFieldOfViewWatcher compFoV = compMain.compFieldOfViewWatcher;
 			// If requires moving, calculate only the base sight.
-			int sightRange = compFoV.calcPawnSightRange(sourceSq, true, !thing.Position.AdjacentToCardinal(sourceSq));
+			int sightRange = Mathf.RoundToInt(compFoV.calcPawnSightRange(sourceSq, true, !thing.Position.AdjacentToCardinal(sourceSq)));
 
 			if (!sourceSq.InHorDistOf(targetLoc, sightRange)) {
 				// If out of sightRange.
@@ -122,7 +125,10 @@ namespace RimWorldRealFoW.Detours {
 			Map map = thing.Map;
 			bool[] targetFound = new bool[1];
 			ShadowCaster.computeFieldOfViewWithShadowCasting(sourceSq.x, sourceSq.z, sightRange,
-					seenFog.viewBlockerCells, map.Size.x, map.Size.z, targetFound, 0, 0, 0,
+					seenFog.viewBlockerCells, map.Size.x, map.Size.z, 
+					false, null, null,
+					targetFound, 0, 0, 0,
+					null, 0, 0, 0, 0, 0,
 					octant, targetLoc.x, targetLoc.z);
 			return targetFound[0];
 		}

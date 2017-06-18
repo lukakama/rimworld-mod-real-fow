@@ -11,44 +11,40 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-using RimWorld;
 using RimWorldRealFoW.Utils;
-using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW.Detours {
-	static class _PawnUIOverlay {
-		public static void DrawPawnGUIOverlay(this PawnUIOverlay _this) {
-			Pawn pawn = ReflectionUtils.getInstancePrivateValue<Pawn>(_this, "pawn");
-			if (!pawn.Spawned || pawn.Map.fogGrid.IsFogged(pawn.Position)) {
+	static class _Pawn {
+		public static void DrawGUIOverlay(this Pawn _this) {
+			if (!_this.Spawned || _this.Map.fogGrid.IsFogged(_this.Position)) {
 				return;
 			}
 
-			if (!pawn.fowIsVisible()) {
-				return;
-			}
-
-			if (!pawn.RaceProps.Humanlike) {
+			if (!_this.RaceProps.Humanlike) {
 				switch (Prefs.AnimalNameMode) {
 					case AnimalNameDisplayMode.None:
 						return;
 					case AnimalNameDisplayMode.TameNamed:
-						if (pawn.Name == null || pawn.Name.Numerical) {
+						if (_this.Name == null || _this.Name.Numerical) {
 							return;
 						}
 						break;
 					case AnimalNameDisplayMode.TameAll:
-						if (pawn.Name == null) {
+						if (_this.Name == null) {
 							return;
 						}
 						break;
 				}
 			}
-			Vector2 pos = GenMapUI.LabelDrawPosFor(pawn, -0.6f);
-			GenMapUI.DrawPawnLabel(pawn, pos, 1f, 9999f, null, GameFont.Tiny, true, true);
-			if (pawn.CanTradeNow) {
-				pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.QuestionMark);
+
+
+			if (!_this.fowIsVisible()) {
+				return;
 			}
+
+			_this.Drawer.ui.DrawPawnGUIOverlay();
 		}
+
 	}
 }

@@ -1,22 +1,20 @@
 ﻿using RimWorld;
 using RimWorldRealFoW.ThingComps;
-using System;
-using System.Collections.Generic;
+using RimWorldRealFoW.ThingComps.ThingSubComps;
 using Verse;
 
 namespace RimWorldRealFoW.Utils {
 	public static class FoWThingUtils {
 		public static bool fowIsVisible(this Thing _this, bool forRender = false) {
-			if (_this.Spawned && _this.Map != null) {
-				CompHiddenable comp = (CompHiddenable) _this.TryGetComp(CompHiddenable.COMP_DEF);
-				if (comp != null && _this.def.isSaveable && !_this.def.saveCompressible) {
-					return !comp.hidden;
-
-				} else {
-					return forRender || _this.fowInKnownCell();
+			if (_this.Spawned) {
+				if (_this.def.isSaveable && !_this.def.saveCompressible) {
+					CompHiddenable comp = (CompHiddenable)_this.TryGetCompHiddenable();
+					if (comp != null) {
+						return !comp.hidden;
+					}
 				}
+				return forRender || (_this.Map != null && _this.fowInKnownCell());
 			}
-
 			return true;
 		}
 
@@ -40,27 +38,29 @@ namespace RimWorldRealFoW.Utils {
 		}
 
 		public static ThingComp TryGetComp(this Thing _this, CompProperties def) {
-			ThingWithComps thingWithComps = _this as ThingWithComps;
-			if (thingWithComps == null) {
-				return null;
-			}
-			return thingWithComps.GetCompByDef(def);
-		}
+			ThingCategory thingCategory = _this.def.category;
+			if (thingCategory == ThingCategory.Pawn ||
+					thingCategory == ThingCategory.Building ||
+					thingCategory == ThingCategory.Item ||
+					thingCategory == ThingCategory.Filth ||
+					thingCategory == ThingCategory.Gas) {
 
-		public static ThingComp TryGetComp(this Thing _this, Type compType) {
-			ThingWithComps thingWithComps = _this as ThingWithComps;
-			if (thingWithComps == null) {
-				return null;
-			}
-			List<ThingComp> allComps = thingWithComps.AllComps;
-			for (int i = 0; i < allComps.Count; i++) {
-				if (allComps[i].props.compClass == compType) {
-					return allComps[i];
+				ThingWithComps thingWithComps = _this as ThingWithComps;
+				if (thingWithComps != null) {
+					return thingWithComps.GetCompByDef(def);
 				}
 			}
+
 			return null;
 		}
 
+		public static CompHiddenable TryGetCompHiddenable(this Thing _this) {
+			CompMainComponent mainComp = (CompMainComponent)_this.TryGetComp(CompMainComponent.COMP_DEF);
+			if (mainComp != null) {
+				return mainComp.compHiddenable;
+			}
 
+			return null;
+		}
 	}
 }

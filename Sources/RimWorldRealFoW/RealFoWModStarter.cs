@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -29,15 +30,18 @@ using Verse.AI;
 namespace RimWorldRealFoW {
 	[StaticConstructorOnStartup]
 	public class RealFoWModStarter : Def {
+
+		/*
+		[DllImport("__Internal")]
+		private static extern void mono_profiler_load(string args);
+		*/
+
 		static RealFoWModStarter() {
-			// NO-OP (here for future uses)
+			// Uncomment to enable mono profiling.
+			// mono_profiler_load(@"default:time,file=d:/rimworld-prof.mprf");
 		}
 
 		public RealFoWModStarter() {
-#if Profile
-			Profiler.enabled = true;
-#endif
-
 			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init.", false, null);
 			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init..", false, null);
 		}
@@ -49,22 +53,31 @@ namespace RimWorldRealFoW {
 					def.thingClass = typeof(FoW_MoteBubble);
 				}
 
-				if (typeof(ThingWithComps).IsAssignableFrom(def.thingClass)
-						&& !typeof(Mote).IsAssignableFrom(def.thingClass)) {
+				ThingCategory thingCategory = def.category;
+				if (typeof(ThingWithComps).IsAssignableFrom(def.thingClass) && 
+						(thingCategory == ThingCategory.Pawn ||
+							thingCategory == ThingCategory.Building ||
+							thingCategory == ThingCategory.Item ||
+							thingCategory == ThingCategory.Filth ||
+							thingCategory == ThingCategory.Gas)) {
+					addComponentAsFirst(def, CompMainComponent.COMP_DEF);
+
+					/*
+					if (thingCategory == ThingCategory.Pawn ||
+							thingCategory == ThingCategory.Building) {
+						addComponentAsFirst(def, CompFieldOfViewWatcher.COMP_DEF);
+					}
+					if (thingCategory == ThingCategory.Building) {
+						addComponentAsFirst(def, CompViewBlockerWatcher.COMP_DEF);
+					}
+
+					addComponentAsFirst(def, CompHideFromPlayer.COMP_DEF);
+					addComponentAsFirst(def, CompHiddenable.COMP_DEF);
+						
 					// This must be the first component triggered on ticks (other component behaviours depend on his trackings),
 					// so it must be added first.
-					addComponent(def, CompComponentsPositionTracker.COMP_DEF);
-
-					if (typeof(Building).IsAssignableFrom(def.thingClass) 
-							|| typeof(Pawn).IsAssignableFrom(def.thingClass)) {
-						addComponent(def, CompFieldOfViewWatcher.COMP_DEF);
-					}
-					if (typeof(Building).IsAssignableFrom(def.thingClass)) {
-						addComponent(def, CompViewBlockerWatcher.COMP_DEF);
-					}
-
-					addComponent(def, CompHiddenable.COMP_DEF);
-					addComponent(def, CompHideFromPlayer.COMP_DEF);
+					addComponentAsFirst(def, CompComponentsPositionTracker.COMP_DEF);
+					*/
 				}
 			}
 		}
@@ -109,9 +122,9 @@ namespace RimWorldRealFoW {
 			Log.Message("Patched " + patchedDesignators + " designators on " + totDesignators + ".");
 		}
 
-		public static void addComponent(ThingDef def, CompProperties compProperties) {
+		public static void addComponentAsFirst(ThingDef def, CompProperties compProperties) {
 			if (!def.comps.Contains(compProperties)) {
-				def.comps.Add(compProperties);
+				def.comps.Insert(0, compProperties);
 			}
 		}
 
@@ -119,9 +132,13 @@ namespace RimWorldRealFoW {
 			detour(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
 			detour(typeof(Selector), typeof(_Selector), "Select");
 			detour(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
-			detour(typeof(PawnUIOverlay), typeof(_PawnUIOverlay), "DrawPawnGUIOverlay");
+			
+			//detour(typeof(PawnUIOverlay), typeof(_PawnUIOverlay), "DrawPawnGUIOverlay");
+			detour(typeof(Pawn), typeof(_Pawn), "DrawGUIOverlay");
+
 			detour(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
-			detour(typeof(SectionLayer_Things), typeof(_SectionLayer_Things), "Regenerate");
+			detour(typeof(SectionLayer_ThingsGeneral), typeof(_SectionLayer_ThingsGeneral), "TakePrintFrom");
+			detour(typeof(SectionLayer_ThingsPowerGrid), typeof(_SectionLayer_ThingsPowerGrid), "TakePrintFrom");
 			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
 			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
 

@@ -15,6 +15,7 @@ using RimWorld;
 using RimWorldRealFoW.SectionLayers;
 using RimWorldRealFoW.ShadowCasters;
 using RimWorldRealFoW.ThingComps;
+using RimWorldRealFoW.ThingComps.ThingSubComps;
 using RimWorldRealFoW.Utils;
 using System;
 using System.Collections.Generic;
@@ -45,7 +46,7 @@ namespace RimWorldRealFoW {
 		private ThingGrid thingGrid;
 
 		public bool initialized = false;
-
+		
 		public MapComponentSeenFog(Map map) : base(map) {
 			mapCellLength = map.cellIndices.NumGridCells;
 			mapSizeX = map.Size.x;
@@ -75,10 +76,9 @@ namespace RimWorldRealFoW {
 		}
 
 		public override void MapComponentUpdate() {
-			base.MapComponentUpdate();
-
 			if (!initialized) {
 				initialized = true;
+
 				init();
 
 				// Some mods (Allows Tools) inject designators at play time and not at mod initialization time.
@@ -145,16 +145,18 @@ namespace RimWorldRealFoW {
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
 				ShadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfViewWatcher.NON_MECH_DEFAULT_RANGE),
-					viewBlockerCells, map.Size.x, map.Size.z,
-					knownCells, 0, 0, mapSizeX);
+					viewBlockerCells, map.Size.x, map.Size.z, 
+					false, null, null, // Directly updating known cells. No need to call incrementSeen.
+					knownCells, 0, 0, mapSizeX, 
+					null, 0, 0, 0, 0, 0);
 
 				for (int i = 0; i < mapCellLength; i++) {
 					if (knownCells[i]) {
 						IntVec3 cell = CellIndicesUtility.IndexToCell(i, mapSizeX);
 						foreach (Thing t in map.thingGrid.ThingsListAtFast(cell)) {
-							CompHideFromPlayer comp = (CompHideFromPlayer) t.TryGetComp(CompHideFromPlayer.COMP_DEF);
-							if (comp != null) {
-								comp.forceSeen();
+							CompMainComponent compMain = (CompMainComponent) t.TryGetComp(CompMainComponent.COMP_DEF);
+							if (compMain != null && compMain.compHideFromPlayer != null) {
+								compMain.compHideFromPlayer.forceSeen();
 							}
 						}
 					}
@@ -164,17 +166,17 @@ namespace RimWorldRealFoW {
 			// Update all thing FoV and visibility.
 			foreach (Thing thing in map.listerThings.AllThings) {
 				if (thing.Spawned) {
-					CompFieldOfViewWatcher compFoV = (CompFieldOfViewWatcher) thing.TryGetComp(CompFieldOfViewWatcher.COMP_DEF);
-					CompComponentsPositionTracker compVisibilityTracker = (CompComponentsPositionTracker) thing.TryGetComp(CompComponentsPositionTracker.COMP_DEF);
-					CompHideFromPlayer compVisibility = (CompHideFromPlayer) thing.TryGetComp(CompHideFromPlayer.COMP_DEF);
-					if (compVisibilityTracker != null) {
-						compVisibilityTracker.updatePosition();
-					}
-					if (compFoV != null) {
-						compFoV.updateFoV();
-					}
-					if (compVisibility != null) {
-						compVisibility.updateVisibility(true);
+					CompMainComponent compMain = (CompMainComponent) thing.TryGetComp(CompMainComponent.COMP_DEF);
+					if (compMain != null) {
+						if (compMain.compComponentsPositionTracker != null) {
+							compMain.compComponentsPositionTracker.updatePosition();
+						}
+						if (compMain.compFieldOfViewWatcher != null) {
+							compMain.compFieldOfViewWatcher.updateFoV();
+						}
+						if (compMain.compHideFromPlayer != null) {
+							compMain.compHideFromPlayer.updateVisibility(true);
+						}
 					}
 				}
 			}
@@ -190,21 +192,12 @@ namespace RimWorldRealFoW {
 		}
 
 		public void incrementSeen(Faction faction, int idx) {
-#if Profile
-			Profiler.BeginSample("incrementSeen");
-#endif
 			int resIdx = resolveIdx(faction, idx);
 			if ((++factionsShownCells[resIdx] == 1) && faction.IsPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
 
-				if (!knownCells[idx]) {
-					knownCells[idx] = true;
-				}
-
-				if (fogGrid.IsFogged(idx)) {
-					fogGrid.Unfog(cell);
-				}
-
+				knownCells[idx] = true;
+				
 				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
 				if (designation != null && MineUtility.MineableInCell(cell, map) == null) {
 					designation.Delete();
@@ -213,22 +206,16 @@ namespace RimWorldRealFoW {
 				if (initialized) {
 					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
-				
+
 				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
 				int compCount = comps.Count;
 				for (int i = 0; i < compCount; i++) {
 					comps[i].updateVisibility(true);
 				}
 			}
-#if Profile
-			Profiler.EndSample();
-#endif
 		}
 
 		public void decrementSeen(Faction faction, int idx) {
-#if Profile
-			Profiler.BeginSample("decrementSeen");
-#endif
 			int resIdx = resolveIdx(faction, idx);
 			if ((--factionsShownCells[resIdx] == 0) && faction.IsPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
@@ -236,16 +223,13 @@ namespace RimWorldRealFoW {
 				if (initialized) {
 					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
-				
+
 				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
 				int compCount = comps.Count;
 				for (int i = 0; i < compCount; i++) {
 					comps[i].updateVisibility(true);
 				}
 			}
-#if Profile
-			Profiler.EndSample();
-#endif
 		}
 	}
 }
