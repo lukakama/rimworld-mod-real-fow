@@ -274,7 +274,12 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							}
 							lastFaction = newFaction;
 
-							calculateFoV(thing, sightRange, false);
+							if (sightRange != 0) {
+								calculateFoV(thing, sightRange, false);
+							} else {
+								unseeSeenCells(lastFaction);
+								revealOccupiedCells();
+							}
 						}
 
 					} else if (compProvideVision != null) {
@@ -300,7 +305,12 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							}
 							lastFaction = newFaction;
 
-							calculateFoV(thing, sightRange, false);
+							if (sightRange != 0) {
+								calculateFoV(thing, sightRange, false);
+							} else {
+								unseeSeenCells(lastFaction);
+								revealOccupiedCells();
+							}
 						}
 					} else if (building != null) {
 						// Generic building.
@@ -318,7 +328,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							}
 							lastFaction = newFaction;
 
-							calculateFoV(thing, sightRange, false);
+							unseeSeenCells(lastFaction);
+							revealOccupiedCells();
 						}
 					} else {
 						// Disable the component (this thing doesn't need the FoV calculation).
@@ -468,7 +479,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			bool[] newViewMap = viewMapSwitch ? this.viewMap2 : this.viewMap1;
 
 			IntVec3 position = thing.Position;
-			Faction faction = parent.Faction;
+			Faction faction = lastFaction;
 
 			int peekRadius = (peek ? intRadius + 1 : intRadius);
 
@@ -622,5 +633,20 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				viewRect.minZ = -1;
 			}
 		}
+
+		private void revealOccupiedCells() {
+			if (parent.Faction == Faction.OfPlayer) {
+				CellRect occupedRect = parent.OccupiedRect();
+
+				int occupiedX;
+				int occupiedZ;
+				for (occupiedX = occupedRect.minX; occupiedX <= occupedRect.maxX; occupiedX++) {
+					for (occupiedZ = occupedRect.minZ; occupiedZ <= occupedRect.maxZ; occupiedZ++) {
+						mapCompSeenFog.revealCell((occupiedZ * mapSizeX) + occupiedX);
+					}
+				}
+			}
+		}
+
 	}
 }

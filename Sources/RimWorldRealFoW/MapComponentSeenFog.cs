@@ -191,6 +191,29 @@ namespace RimWorldRealFoW {
 			ArrayExposeUtility.ExposeBoolArray(ref knownCells, map.Size.x, map.Size.z, "revealedCells");
 		}
 
+		public void revealCell(int idx) {
+			if (!knownCells[idx]) {
+				IntVec3 cell = idxToCellCache[idx];
+
+				knownCells[idx] = true;
+
+				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
+				if (designation != null && MineUtility.MineableInCell(cell, map) == null) {
+					designation.Delete();
+				}
+
+				if (initialized) {
+					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
+				}
+
+				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+				int compCount = comps.Count;
+				for (int i = 0; i < compCount; i++) {
+					comps[i].updateVisibility(true);
+				}
+			}
+		}
+
 		public void incrementSeen(Faction faction, int idx) {
 			int resIdx = resolveIdx(faction, idx);
 			if ((++factionsShownCells[resIdx] == 1) && faction.IsPlayer) {
