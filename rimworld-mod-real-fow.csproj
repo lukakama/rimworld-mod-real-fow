@@ -33,6 +33,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <DebugSymbols>false</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Profile|AnyCPU'">
     <OutputPath>..\..\..\SteamLibrary\SteamApps\common\RimWorld\Mods\RealFoW\Assemblies\</OutputPath>
@@ -155,8 +156,7 @@
       xcopy /Q /Y /S /I "$(ProjectDir)Defs\*" "$(TargetDir)..\Defs"
       xcopy /Q /Y /S /I "$(ProjectDir)Textures\*" "$(TargetDir)..\Textures"
       xcopy /Q /Y /S /I "$(ProjectDir)Languages\*" "$(TargetDir)..\Languages"
-      xcopy /Q /Y /S /I "$(ProjectDir)Sources\RimWorldRealFoWUnity\Assets\Bundles\*" "$(TargetDir)..\AssetsBundles"
-    </PostBuildEvent>
+</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>

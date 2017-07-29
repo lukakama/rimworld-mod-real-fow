@@ -126,7 +126,7 @@ namespace RimWorldRealFoW.Detours {
 			bool[] targetFound = new bool[1];
 			ShadowCaster.computeFieldOfViewWithShadowCasting(sourceSq.x, sourceSq.z, sightRange,
 					seenFog.viewBlockerCells, map.Size.x, map.Size.z, 
-					false, null, null,
+					false, null, null, null,
 					targetFound, 0, 0, 0,
 					null, 0, 0, 0, 0, 0,
 					octant, targetLoc.x, targetLoc.z);

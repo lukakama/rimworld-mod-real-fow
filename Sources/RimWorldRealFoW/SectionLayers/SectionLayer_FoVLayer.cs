@@ -24,7 +24,8 @@ namespace RimWorldRealFoW.SectionLayers {
 		public static byte prefFogAlpha = 86;
 
 		private MapComponentSeenFog pawnFog;
-		
+		private int[] factionShownGrid = null;
+
 		public static MapMeshFlag mapMeshFlag = MapMeshFlag.None;
 
 		static SectionLayer_FoVLayer() {
@@ -145,8 +146,10 @@ namespace RimWorldRealFoW.SectionLayers {
 				int colorIdx = 0;
 
 				bool[] fogGrid = base.Map.fogGrid.fogGrid;
-				int baseIdx = pawnFog.getBaseIdx(Faction.OfPlayer);
-				int[] factionsShownGrid = pawnFog.factionsShownCells;
+				if (this.factionShownGrid == null) {
+					this.factionShownGrid = pawnFog.getFactionShownCells(Faction.OfPlayer);
+				}
+				int[] factionShownGrid = this.factionShownGrid;
 
 				bool[] knownGrid = pawnFog.knownCells;
 
@@ -178,7 +181,7 @@ namespace RimWorldRealFoW.SectionLayers {
 					for (int z = cellRect.minZ; z <= cellRect.maxZ; z++) {
 						cellIdx = z * mapSizeX + x;
 						if (!fogGrid[cellIdx]) {
-							if (factionsShownGrid[baseIdx + cellIdx] == 0) {
+							if (factionShownGrid[cellIdx] == 0) {
 								cellKnown = knownGrid[cellIdx];
 								for (int n = 0; n < 9; n++) {
 									this.vertsNotShown[n] = true;
@@ -242,7 +245,7 @@ namespace RimWorldRealFoW.SectionLayers {
 								cellIdxNE = (z + 1) * mapSizeX + (x + 1);
 								cellIdxSE = (z - 1) * mapSizeX + (x + 1);
 
-								if (z < mapHeight && factionsShownGrid[baseIdx + cellIdxN] == 0) {
+								if (z < mapHeight && factionShownGrid[cellIdxN] == 0) {
 									adjCellKnown = knownGrid[cellIdxN];
 									this.vertsNotShown[2] = true;
 									this.vertsSeen[2] = adjCellKnown;
@@ -251,7 +254,7 @@ namespace RimWorldRealFoW.SectionLayers {
 									this.vertsNotShown[4] = true;
 									this.vertsSeen[4] = adjCellKnown;
 								}
-								if (z > 0 && factionsShownGrid[baseIdx + cellIdxS] == 0) {
+								if (z > 0 && factionShownGrid[cellIdxS] == 0) {
 									adjCellKnown = knownGrid[cellIdxS];
 									this.vertsNotShown[6] = true;
 									this.vertsSeen[6] = adjCellKnown;
@@ -260,7 +263,7 @@ namespace RimWorldRealFoW.SectionLayers {
 									this.vertsNotShown[0] = true;
 									this.vertsSeen[0] = adjCellKnown;
 								}
-								if (x < mapWidth && factionsShownGrid[baseIdx + cellIdxE] == 0) {
+								if (x < mapWidth && factionShownGrid[cellIdxE] == 0) {
 									adjCellKnown = knownGrid[cellIdxE];
 									this.vertsNotShown[4] = true;
 									this.vertsSeen[4] = adjCellKnown;
@@ -269,7 +272,7 @@ namespace RimWorldRealFoW.SectionLayers {
 									this.vertsNotShown[6] = true;
 									this.vertsSeen[6] = adjCellKnown;
 								}
-								if (x > 0 && factionsShownGrid[baseIdx + cellIdxW] == 0) {
+								if (x > 0 && factionShownGrid[cellIdxW] == 0) {
 									adjCellKnown = knownGrid[cellIdxW];
 									this.vertsNotShown[0] = true;
 									this.vertsSeen[0] = adjCellKnown;
@@ -278,22 +281,22 @@ namespace RimWorldRealFoW.SectionLayers {
 									this.vertsNotShown[2] = true;
 									this.vertsSeen[2] = adjCellKnown;
 								}
-								if (z > 0 && x > 0 && factionsShownGrid[baseIdx + cellIdxSW] == 0) {
+								if (z > 0 && x > 0 && factionShownGrid[cellIdxSW] == 0) {
 									adjCellKnown = knownGrid[cellIdxSW];
 									this.vertsNotShown[0] = true;
 									this.vertsSeen[0] = adjCellKnown;
 								}
-								if (z < mapHeight && x > 0 && factionsShownGrid[baseIdx + cellIdxNW] == 0) {
+								if (z < mapHeight && x > 0 && factionShownGrid[cellIdxNW] == 0) {
 									adjCellKnown = knownGrid[cellIdxNW];
 									this.vertsNotShown[2] = true;
 									this.vertsSeen[2] = adjCellKnown;
 								}
-								if (z < mapHeight && x < mapWidth && factionsShownGrid[baseIdx + cellIdxNE] == 0) {
+								if (z < mapHeight && x < mapWidth && factionShownGrid[cellIdxNE] == 0) {
 									adjCellKnown = knownGrid[cellIdxNE];
 									this.vertsNotShown[4] = true;
 									this.vertsSeen[4] = adjCellKnown;
 								}
-								if (z > 0 && x < mapWidth && factionsShownGrid[baseIdx + cellIdxSE] == 0) {
+								if (z > 0 && x < mapWidth && factionShownGrid[cellIdxSE] == 0) {
 									adjCellKnown = knownGrid[cellIdxSE];
 									this.vertsNotShown[6] = true;
 									this.vertsSeen[6] = adjCellKnown;

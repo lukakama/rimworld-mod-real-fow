@@ -24,7 +24,7 @@ using Verse;
 
 namespace RimWorldRealFoW {
 	public class MapComponentSeenFog : MapComponent {
-		public int[] factionsShownCells = null;
+		public int[][] factionsShownCells = null;
 		public bool[] knownCells = null;
 
 		public bool[] viewBlockerCells = null;
@@ -58,9 +58,12 @@ namespace RimWorldRealFoW {
 
 			designationManager = this.map.designationManager;
 
-			maxFactionLoadId = Find.World.factionManager.AllFactionsListForReading.Count;
+			maxFactionLoadId = 0;
+			foreach (Faction faction in Find.World.factionManager.AllFactionsListForReading) {
+				maxFactionLoadId = Math.Max(maxFactionLoadId, faction.loadID);
+			}
+			factionsShownCells = new int[maxFactionLoadId + 1][];
 
-			factionsShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
 			knownCells = new bool[mapCellLength];
 			viewBlockerCells = new bool[mapCellLength];
 
@@ -86,27 +89,29 @@ namespace RimWorldRealFoW {
 				RealFoWModStarter.patchDesignators();
 			}
 		}
+		
+		public int[] getFactionShownCells(Faction faction) {
+			if (faction == null) {
+				return null;
+			}
 
-		public int getBaseIdx(Faction faction) {
 			if (maxFactionLoadId < faction.loadID) {
-				maxFactionLoadId = faction.loadID;
-				int[] newFactionShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
+				// Increase the jagged array.
+				maxFactionLoadId = faction.loadID + 1;
+				int[][] newFactionShownCells = new int[maxFactionLoadId + 1][];
+
+				// Copy old references.
 				Array.Copy(factionsShownCells, newFactionShownCells, factionsShownCells.Length);
+
 				factionsShownCells = newFactionShownCells;
 			}
 
-			return faction.loadID * mapCellLength;
-		}
-
-		public int resolveIdx(Faction faction, int idxCell) {
-			if (maxFactionLoadId < faction.loadID) {
-				maxFactionLoadId = faction.loadID;
-				int[] newFactionShownCells = new int[(mapCellLength * (maxFactionLoadId + 1)) - 1];
-				Array.Copy(factionsShownCells, newFactionShownCells, factionsShownCells.Length);
-				factionsShownCells = newFactionShownCells;
+			// Lazy init faction shown grids (some mods could create dummy factions not used, causing a huge amount of memory waste).
+			if (factionsShownCells[faction.loadID] == null) {
+				factionsShownCells[faction.loadID] = new int[mapCellLength];
 			}
 
-			return (faction.loadID * mapCellLength) + idxCell;
+			return factionsShownCells[faction.loadID];
 		}
 
 		public bool isShown(Faction faction, IntVec3 cell) {
@@ -114,8 +119,7 @@ namespace RimWorldRealFoW {
 		}
 		
 		public bool isShown(Faction faction, int x, int z) {
-			int resIdx = resolveIdx(faction, (z * mapSizeX) + x);
-			return factionsShownCells[resIdx] != 0;
+			return getFactionShownCells(faction)[(z * mapSizeX) + x] != 0;
 		}
 
 		public void registerCompHideFromPlayerPosition(CompHideFromPlayer comp, int x, int z) {
@@ -146,7 +150,7 @@ namespace RimWorldRealFoW {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
 				ShadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfViewWatcher.NON_MECH_DEFAULT_RANGE),
 					viewBlockerCells, map.Size.x, map.Size.z, 
-					false, null, null, // Directly updating known cells. No need to call incrementSeen.
+					false, null, null, null, // Directly updating known cells. No need to call incrementSeen.
 					knownCells, 0, 0, mapSizeX, 
 					null, 0, 0, 0, 0, 0);
 
@@ -214,9 +218,8 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public void incrementSeen(Faction faction, int idx) {
-			int resIdx = resolveIdx(faction, idx);
-			if ((++factionsShownCells[resIdx] == 1) && faction.IsPlayer) {
+		public void incrementSeen(Faction faction, int[] factionShownCells, int idx) {
+			if ((++factionShownCells[idx] == 1) && faction.IsPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
 
 				knownCells[idx] = true;
@@ -238,9 +241,8 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public void decrementSeen(Faction faction, int idx) {
-			int resIdx = resolveIdx(faction, idx);
-			if ((--factionsShownCells[resIdx] == 0) && faction.IsPlayer) {
+		public void decrementSeen(Faction faction, int[] factionShownCells, int idx) {
+			if ((--factionShownCells[idx] == 0) && faction.IsPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
 
 				if (initialized) {

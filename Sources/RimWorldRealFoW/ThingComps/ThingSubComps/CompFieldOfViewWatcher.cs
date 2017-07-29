@@ -34,6 +34,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 		private bool lastIsPeeking;
 		private Faction lastFaction;
+		private int[] lastFactionShownCells;
 
 		private float baseViewRange;
 		
@@ -182,8 +183,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 		private void initMap() {
 			if (map != parent.Map) {
-				if (map != null) {
-					unseeSeenCells();
+				if (map != null && lastFaction != null) {
+					unseeSeenCells(lastFaction, lastFactionShownCells);
 				}
 				map = parent.Map;
 				mapCompSeenFog = map.getMapComponentSeenFog();
@@ -239,15 +240,19 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							lastIsPeeking = isPeeking;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != newFaction) {
-								unseeSeenCells(lastFaction);
+							if (lastFaction != newFaction) {
+								if (lastFaction != null) {
+									unseeSeenCells(lastFaction, lastFactionShownCells);
+								}
+								lastFaction = newFaction;
+								lastFactionShownCells = mapCompSeenFog.getFactionShownCells(newFaction);
 							}
-							lastFaction = newFaction;
+
 
 							if (sightRange != -1) {
 								calculateFoV(thing, sightRange, isPeeking);
 							} else {
-								unseeSeenCells();
+								unseeSeenCells(lastFaction, lastFactionShownCells);
 							}
 						}
 
@@ -269,15 +274,18 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != newFaction) {
-								unseeSeenCells(lastFaction);
+							if (lastFaction != newFaction) {
+								if (lastFaction != null) {
+									unseeSeenCells(lastFaction, lastFactionShownCells);
+								}
+								lastFaction = newFaction;
+								lastFactionShownCells = mapCompSeenFog.getFactionShownCells(newFaction);
 							}
-							lastFaction = newFaction;
 
 							if (sightRange != 0) {
 								calculateFoV(thing, sightRange, false);
 							} else {
-								unseeSeenCells(lastFaction);
+								unseeSeenCells(lastFaction, lastFactionShownCells);
 								revealOccupiedCells();
 							}
 						}
@@ -300,15 +308,18 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != newFaction) {
-								unseeSeenCells(lastFaction);
+							if (lastFaction != newFaction) {
+								if (lastFaction != null) {
+									unseeSeenCells(lastFaction, lastFactionShownCells);
+								}
+								lastFaction = newFaction;
+								lastFactionShownCells = mapCompSeenFog.getFactionShownCells(newFaction);
 							}
-							lastFaction = newFaction;
 
 							if (sightRange != 0) {
 								calculateFoV(thing, sightRange, false);
 							} else {
-								unseeSeenCells(lastFaction);
+								unseeSeenCells(lastFaction, lastFactionShownCells);
 								revealOccupiedCells();
 							}
 						}
@@ -323,12 +334,15 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							lastSightRange = sightRange;
 
 							// Faction change. Unseen and clear old seen cells
-							if (lastFaction != null && lastFaction != newFaction) {
-								unseeSeenCells(lastFaction);
+							if (lastFaction != newFaction) {
+								if (lastFaction != null) {
+									unseeSeenCells(lastFaction, lastFactionShownCells);
+								}
+								lastFaction = newFaction;
+								lastFactionShownCells = mapCompSeenFog.getFactionShownCells(newFaction);
 							}
-							lastFaction = newFaction;
 
-							unseeSeenCells(lastFaction);
+							unseeSeenCells(lastFaction, lastFactionShownCells);
 							revealOccupiedCells();
 						}
 					} else {
@@ -338,9 +352,10 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				} else if (newFaction != lastFaction) {
 					// Faction change (from a faction to nothing). Unseen and clear old seen cells
 					if (lastFaction != null) {
-						unseeSeenCells(lastFaction);
+						unseeSeenCells(lastFaction, lastFactionShownCells);
 					}
 					lastFaction = newFaction;
+					lastFactionShownCells = mapCompSeenFog.getFactionShownCells(newFaction);
 				}
 			}
 		}
@@ -457,7 +472,9 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 		public override void PostDeSpawn(Map map) {
 			base.PostDeSpawn(map);
 
-			unseeSeenCells();
+			if (lastFaction != null) {
+				unseeSeenCells(lastFaction, lastFactionShownCells);
+			}
 		}
 
 		//static int profileCount = 0;
@@ -480,6 +497,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 			IntVec3 position = thing.Position;
 			Faction faction = lastFaction;
+			int[] factionShownCells = lastFactionShownCells;
 
 			int peekRadius = (peek ? intRadius + 1 : intRadius);
 
@@ -523,12 +541,12 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				for (occupiedZ = occupedRect.minZ; occupiedZ <= occupedRect.maxZ; occupiedZ++) {
 					newViewMap[((occupiedZ - newViewRectMinZ) * newViewWidth) + (occupiedX - newViewRectMinX)] = true;
 					if (oldViewMap == null || occupiedX < oldViewRectMinX || occupiedZ < oldViewRectMinZ || occupiedX > oldViewRectMaxX || occupiedZ > oldViewRectMaxZ) {
-						mapCompSeenFog.incrementSeen(faction, (occupiedZ * mapSizeX) + occupiedX);
+						mapCompSeenFog.incrementSeen(faction, factionShownCells, (occupiedZ * mapSizeX) + occupiedX);
 					} else {
 						oldViewRectIdx = ((occupiedZ - oldViewRectMinZ) * oldViewWidth) + (occupiedX - oldViewRectMinX);
 						if (!oldViewMap[oldViewRectIdx]) {
 							// Old cell was not visible. Increment seen counter in global grid.
-							mapCompSeenFog.incrementSeen(faction, (occupiedZ * mapSizeX) + occupiedX);
+							mapCompSeenFog.incrementSeen(faction, factionShownCells, (occupiedZ * mapSizeX) + occupiedX);
 						} else {
 							// Old cell was already visible. Mark it to not be unseen.
 							oldViewMap[oldViewRectIdx] = false;
@@ -563,7 +581,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 								(i == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[(viewPosition.z * mapSizeX)  + viewPosition.x])) {
 						ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
 							viewBlockerCells, mapSizeX, mapSizeZ, 
-							true, mapCompSeenFog, faction, 
+							true, mapCompSeenFog, faction, factionShownCells,
 							newViewMap, newViewRectMinX, newViewRectMinZ, newViewWidth,
 							oldViewMap, oldViewRectMinX, oldViewRectMaxX, oldViewRectMinZ, oldViewRectMaxZ, oldViewWidth);
 					}
@@ -579,7 +597,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 						oldX = oldViewRectMinX + (i % oldViewWidth);
 						oldZ = oldViewRectMinZ + (i / oldViewWidth);
 						if (oldZ >= 0 && oldZ <= mapSizeZ && oldX >= 0 && oldX <= mapSizeX) {
-							mapCompSeenFog.decrementSeen(faction, (oldZ * mapSizeX) + oldX);
+							mapCompSeenFog.decrementSeen(faction, factionShownCells, (oldZ * mapSizeX) + oldX);
 						}
 					}
 				}
@@ -595,10 +613,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			viewRect.minZ = newViewRectMinZ;
 		}
 
-		private void unseeSeenCells(Faction faction = null) {
-			if (faction == null) {
-				faction = parent.Faction;
-			}
+		private void unseeSeenCells(Faction faction, int[] factionShownCells) {
 			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
 
 			if (viewMap != null) {
@@ -620,7 +635,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 						x = viewRectMinX + (i % viewWidth);
 						z = viewRectMinZ + (i / viewWidth);
 						if (z >= 0 && z <= mapZ && x >= 0 && x <= mapX) {
-							mapCompSeenFog.decrementSeen(faction, (z * mapX) + x);
+							mapCompSeenFog.decrementSeen(faction, factionShownCells, (z * mapX) + x);
 						}
 						viewMap[i] = false;
 					}

@@ -22,7 +22,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 		public static void computeFieldOfViewWithShadowCasting(
 				int startX, int startY, int radius,
 				bool[] viewBlockerCells, int maxX, int maxY,
-				bool handleSeenAndCache, MapComponentSeenFog mapCompSeenFog, Faction faction,
+				bool handleSeenAndCache, MapComponentSeenFog mapCompSeenFog, Faction faction, int[] factionShownCells,
 				bool[] fovGrid, int fovGridMinX, int fovGridMinY, int fovGridWidth,
 				bool[] oldFovGrid, int oldFovGridMinX, int oldFovGridMaxX, int oldFovGridMinY, int oldFovGridMaxY, int oldFovGridWidth,
 				byte specificOctant = 255,
@@ -50,7 +50,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 					maxX,
 					maxY,
 					viewBlockerCells,
-					handleSeenAndCache, mapCompSeenFog, faction,
+					handleSeenAndCache, mapCompSeenFog, faction, factionShownCells,
 					targetX,
 					targetY,
 					0, 1, 1, 1, 0);
@@ -75,7 +75,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 					maxX,
 					maxY,
 					viewBlockerCells,
-					handleSeenAndCache, mapCompSeenFog, faction,
+					handleSeenAndCache, mapCompSeenFog, faction, factionShownCells,
 					targetX,
 					targetY,
 					0, 1, 1, 1, 0);
@@ -104,6 +104,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 				bool handleSeenAndCache,
 				MapComponentSeenFog mapCompSeenFog,
 				Faction faction,
+				int[] factionShownCells,
 				int targetX,
 				int targetY,
 				int x,
@@ -210,12 +211,12 @@ namespace RimWorldRealFoW.ShadowCasters {
 								fovGrid[fogGridIdx] = true;
 								if (handleSeenAndCache) {
 									if (oldFovGrid == null || worldX < oldFovGridMinX || worldY < oldFovGridMinY || worldX > oldFovGridMaxX || worldY > oldFovGridMaxY) {
-										mapCompSeenFog.incrementSeen(faction, (worldY * maxX) + worldX);
+										mapCompSeenFog.incrementSeen(faction, factionShownCells, (worldY * maxX) + worldX);
 									} else {
 										oldFogGridIdx = ((worldY - oldFovGridMinY) * oldFovGridWidth) + (worldX - oldFovGridMinX);
 										if (!oldFovGrid[oldFogGridIdx]) {
 											// Old cell was not visible. Increment seen counter in global grid.
-											mapCompSeenFog.incrementSeen(faction, (worldY * maxX) + worldX);
+											mapCompSeenFog.incrementSeen(faction, factionShownCells, (worldY * maxX) + worldX);
 										} else {
 											// Old cell was already visible. Mark it to not be unseen.
 											oldFovGrid[oldFogGridIdx] = false;
@@ -249,7 +250,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 									fovGrid, fovGridMinX, fovGridMinY, fovGridWidth, 
 									oldFovGrid, oldFovGridMinX, oldFovGridMaxX, oldFovGridMinY, oldFovGridMaxY, oldFovGridWidth, 
 									radius, r_r_4, startX, startY, maxX, maxY, viewBlockerCells, 
-									handleSeenAndCache, mapCompSeenFog, faction,
+									handleSeenAndCache, mapCompSeenFog, faction, factionShownCells,
 									targetX, targetY, x + 1, topVectorX, topVectorY, x * 2 - 1, y * 2 + 1);
 								if (targetX != -1 && fovGrid[0]) {
 									// Quit if looking for target and found it.
