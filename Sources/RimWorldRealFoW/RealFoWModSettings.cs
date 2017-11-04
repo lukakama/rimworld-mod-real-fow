@@ -11,35 +11,68 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-using HugsLib;
-using HugsLib.Settings;
 using RimWorldRealFoW.SectionLayers;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW {
-	public class RealFoWModSettings : ModBase {
-		public override string ModIdentifier {
-			get { return "RealFogOfWar"; }
-		}
-			
+	public class RealFoWModSettings : ModSettings {
 		public enum FogFadeSpeedEnum { Slow = 5, Medium = 20, Fast = 40, Disabled = 100 }
-		public SettingHandle<FogFadeSpeedEnum> fogFadeSpeed;
-
 		public enum FogAlpha { Dark = 127, Medium = 86, Light = 64 }
-		public SettingHandle<FogAlpha> fogAlpha;
 
-		public override void DefsLoaded() {
-			fogAlpha = Settings.GetHandle<FogAlpha>("fogAlpha", "fogAlphaSetting_title".Translate(), "fogAlphaSetting_desc".Translate(), FogAlpha.Medium, null, "fogAlphaSetting_");
-			fogFadeSpeed = Settings.GetHandle<FogFadeSpeedEnum>("fogFadeSpeed", "fogFadeSpeedSetting_title".Translate(), "fogFadeSpeedSetting_desc".Translate(), FogFadeSpeedEnum.Medium, null, "fogFadeSpeedSetting_");
+		public static FogFadeSpeedEnum fogFadeSpeed = FogFadeSpeedEnum.Medium;
+		public static FogAlpha fogAlpha = FogAlpha.Medium;
 
-			applySettings();
+		public static void DoSettingsWindowContents(Rect rect) {
+			Listing_Standard list = new Listing_Standard(GameFont.Small);
+			list.ColumnWidth = rect.width;
+			list.Begin(rect);
+
+			if (list.ButtonTextLabeled("fogAlphaSetting_title".Translate(), ("fogAlphaSetting_" + fogAlpha).Translate())) {
+				List<FloatMenuOption> optionList = new List<FloatMenuOption>();
+				foreach (FogAlpha enumValue in Enum.GetValues(typeof(FogAlpha))) {
+					FogAlpha localValue = enumValue;
+					optionList.Add(new FloatMenuOption(("fogAlphaSetting_" + localValue).Translate(), delegate {
+						fogAlpha = localValue;
+
+						applySettings();
+					}, MenuOptionPriority.Default, null, null, 0f, null, null));
+				}
+				Find.WindowStack.Add(new FloatMenu(optionList));
+			}
+			Text.Font = GameFont.Tiny;
+			list.Label("fogAlphaSetting_desc".Translate());
+			Text.Font = GameFont.Small;
+
+			list.Gap();
+			list.GapLine();
+
+			if (list.ButtonTextLabeled("fogFadeSpeedSetting_title".Translate(), ("fogFadeSpeedSetting_" + fogFadeSpeed).Translate())) {
+				List<FloatMenuOption> optionList = new List<FloatMenuOption>();
+				foreach (FogFadeSpeedEnum enumValue in Enum.GetValues(typeof(FogFadeSpeedEnum))) {
+					FogFadeSpeedEnum localValue = enumValue;
+					optionList.Add(new FloatMenuOption(("fogFadeSpeedSetting_" + localValue).Translate(), delegate {
+						fogFadeSpeed = localValue;
+
+						applySettings();
+					}, MenuOptionPriority.Default, null, null, 0f, null, null));
+				}
+				Find.WindowStack.Add(new FloatMenu(optionList));
+			}
+			Text.Font = GameFont.Tiny;
+			list.Label("fogFadeSpeedSetting_desc".Translate());
+			Text.Font = GameFont.Small;
+
+			list.End();
 		}
 
-		public void applySettings() {
-			SectionLayer_FoVLayer.prefFadeSpeedMult = (int) fogFadeSpeed.Value / 10f;
-			SectionLayer_FoVLayer.prefEnableFade = (int) fogFadeSpeed.Value != 100;
+		public static void applySettings() {
+			SectionLayer_FoVLayer.prefFadeSpeedMult = (int)fogFadeSpeed / 10f;
+			SectionLayer_FoVLayer.prefEnableFade = (int)fogFadeSpeed != 100;
 
-			SectionLayer_FoVLayer.prefFogAlpha = (byte) fogAlpha.Value;
+			SectionLayer_FoVLayer.prefFogAlpha = (byte)fogAlpha;
 
 			// If playing, redraw everything.
 			if (Current.ProgramState == ProgramState.Playing) {
@@ -51,8 +84,11 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public override void SettingsChanged() {
-			base.SettingsChanged();
+		public override void ExposeData() {
+			base.ExposeData();
+
+			Scribe_Values.Look(ref fogFadeSpeed, "fogFadeSpeed", FogFadeSpeedEnum.Medium);
+			Scribe_Values.Look(ref fogAlpha, "fogAlpha", FogAlpha.Medium);
 
 			applySettings();
 		}

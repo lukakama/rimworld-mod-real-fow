@@ -20,84 +20,31 @@ namespace RimWorldRealFoW.Detours {
 	public static class _MouseoverReadout {
 		private static readonly Vector2 BotLeft = new Vector2(15f, 65f);
 
-		public static void MouseoverReadoutOnGUI(this MouseoverReadout _this) {
+		public static bool MouseoverReadoutOnGUI_Prefix(MouseoverReadout __instance) {
 			if (Event.current.type != EventType.Repaint) {
-				return;
+				return true;
 			}
 			if (Find.MainTabsRoot.OpenTab != null) {
-				return;
+				return true;
 			}
-			GenUI.DrawTextWinterShadow(new Rect(256f, (float) (UI.screenHeight - 256), -256f, 256f));
-			Text.Font = GameFont.Small;
-			GUI.color = new Color(1f, 1f, 1f, 0.8f);
 			IntVec3 c = UI.MouseCell();
 			if (!c.InBounds(Find.VisibleMap)) {
-				return;
+				return true;
 			}
-			float num = 0f;
-			Rect rect;
-			// >>>> Patch start
+
 			MapComponentSeenFog seenFog = Find.VisibleMap.getMapComponentSeenFog();
-			if (c.Fogged(Find.VisibleMap) || (seenFog != null && !seenFog.knownCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
-			// <<<< Patch end
-				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-				Widgets.Label(rect, "Undiscovered".Translate());
+			if (!c.Fogged(Find.VisibleMap) && (seenFog != null && !seenFog.knownCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
+				GenUI.DrawTextWinterShadow(new Rect(256f, (float)(UI.screenHeight - 256), -256f, 256f));
+				Text.Font = GameFont.Small;
+				GUI.color = new Color(1f, 1f, 1f, 0.8f);
+
+				Rect rect = new Rect(_MouseoverReadout.BotLeft.x, (float)UI.screenHeight - _MouseoverReadout.BotLeft.y, 999f, 999f);
+				Widgets.Label(rect, "NotVisible".Translate());
 				GUI.color = Color.white;
-				return;
+				return false;
 			}
-			rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-			int num2 = Mathf.RoundToInt(Find.VisibleMap.glowGrid.GameGlowAt(c) * 100f);
-			Widgets.Label(rect, ReflectionUtils.getInstancePrivateValue<string[]>(_this, "glowStrings")[num2]);
-			num += 19f;
-			rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-			TerrainDef terrain = c.GetTerrain(Find.VisibleMap);
-			if (terrain != ReflectionUtils.getInstancePrivateValue<TerrainDef>(_this, "cachedTerrain")) {
-				string str = ((double) terrain.fertility <= 0.0001) ? string.Empty : (" " + "FertShort".Translate() + " " + terrain.fertility.ToStringPercent());
-				ReflectionUtils.setInstancePrivateValue(_this, "cachedTerrainString", terrain.LabelCap + ((terrain.passability == Traversability.Impassable) ? null : (" (" + "WalkSpeed".Translate(new object[]
-				{
-					ReflectionUtils.execInstancePrivate<string>(_this, "SpeedPercentString", (float)terrain.pathCost)
-				}) + str + ")")));
-				ReflectionUtils.setInstancePrivateValue(_this, "cachedTerrain", terrain);
-			}
-			Widgets.Label(rect, ReflectionUtils.getInstancePrivateValue<string>(_this, "cachedTerrainString"));
-			num += 19f;
-			Zone zone = c.GetZone(Find.VisibleMap);
-			if (zone != null) {
-				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-				string label = zone.label;
-				Widgets.Label(rect, label);
-				num += 19f;
-			}
-			float depth = Find.VisibleMap.snowGrid.GetDepth(c);
-			if (depth > 0.03f) {
-				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-				SnowCategory snowCategory = SnowUtility.GetSnowCategory(depth);
-				string label2 = SnowUtility.GetDescription(snowCategory) + " (" + "WalkSpeed".Translate(new object[]
-				{
-					ReflectionUtils.execInstancePrivate<string>(_this, "SpeedPercentString", (float)SnowUtility.MovementTicksAddOn(snowCategory))
-				}) + ")";
-				Widgets.Label(rect, label2);
-				num += 19f;
-			}
-			List<Thing> thingList = c.GetThingList(Find.VisibleMap);
-			for (int i = 0; i < thingList.Count; i++) {
-				Thing thing = thingList[i];
-				// >>>> Patch start
-				if (thing.fowIsVisible() && thing.def.category != ThingCategory.Mote) {
-					rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-					string labelMouseover = thing.LabelMouseover;
-					Widgets.Label(rect, labelMouseover);
-					num += 19f;
-				}
-				// <<<< Patch end
-			}
-			RoofDef roof = c.GetRoof(Find.VisibleMap);
-			if (roof != null) {
-				rect = new Rect(_MouseoverReadout.BotLeft.x, (float) UI.screenHeight - _MouseoverReadout.BotLeft.y - num, 999f, 999f);
-				Widgets.Label(rect, roof.LabelCap);
-				num += 19f;
-			}
-			GUI.color = Color.white;
+
+			return true;
 		}
 	}
 }

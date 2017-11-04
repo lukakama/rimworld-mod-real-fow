@@ -35,21 +35,26 @@ namespace RimWorldRealFoW.ThingComps {
 
 				compComponentsPositionTracker = new CompComponentsPositionTracker();
 				compComponentsPositionTracker.parent = parent;
+				compComponentsPositionTracker.mainComponent = this;
 
 				compHiddenable = new CompHiddenable();
 				compHiddenable.parent = parent;
+				compHiddenable.mainComponent = this;
 
 				compHideFromPlayer = new CompHideFromPlayer();
 				compHideFromPlayer.parent = parent;
+				compHideFromPlayer.mainComponent = this;
 
 				if (thingCategory == ThingCategory.Building) {
 					compViewBlockerWatcher = new CompViewBlockerWatcher();
 					compViewBlockerWatcher.parent = parent;
+					compViewBlockerWatcher.mainComponent = this;
 				}
 				if (thingCategory == ThingCategory.Pawn ||
 						thingCategory == ThingCategory.Building) {
 					compFieldOfViewWatcher = new CompFieldOfViewWatcher();
 					compFieldOfViewWatcher.parent = parent;
+					compFieldOfViewWatcher.mainComponent = this;
 				}
 			}
 		}

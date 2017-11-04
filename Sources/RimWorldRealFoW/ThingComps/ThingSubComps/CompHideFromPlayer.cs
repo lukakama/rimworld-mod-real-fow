@@ -55,7 +55,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			isSaveable = parent.def.isSaveable;
 			saveCompressible = parent.def.saveCompressible;
 
-			compHiddenable = parent.TryGetCompHiddenable();
+			compHiddenable = mainComponent.compHiddenable;
 
 			updateVisibility(false);
 		}

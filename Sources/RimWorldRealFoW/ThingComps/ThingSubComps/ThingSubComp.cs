@@ -11,13 +11,12 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-using RimWorld;
-using RimWorldRealFoW.Utils;
 using Verse;
 
 namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 	public abstract class ThingSubComp {
 		public ThingWithComps parent;
+		public CompMainComponent mainComponent;
 
 		public virtual void CompTick() {
 

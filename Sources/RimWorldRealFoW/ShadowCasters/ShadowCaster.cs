@@ -127,10 +127,15 @@ namespace RimWorldRealFoW.ShadowCasters {
 			int fogGridIdx;
 			int oldFogGridIdx;
 
+			int x2;
+			int y2;
+
 			int worldY = 0;
 			int worldX = 0;
 
 			while (x <= radius) {
+				x2 = 2 * x;
+
 				// This method has two main purposes: (1) it marks points inside the
 				// portion that are within the radius as in the field of view, and 
 				// (2) it computes which portions of the following column are in the 
@@ -145,8 +150,8 @@ namespace RimWorldRealFoW.ShadowCasters {
 				if (x == 0) {
 					topY = 0;
 				} else {
-					quotient = (2 * x + 1) * topVectorY / (2 * topVectorX);
-					remainder = (2 * x + 1) * topVectorY % (2 * topVectorX);
+					quotient = (x2 + 1) * topVectorY / (2 * topVectorX);
+					remainder = (x2 + 1) * topVectorY % (2 * topVectorX);
 
 					if (remainder > topVectorX) {
 						topY = quotient + 1;
@@ -161,8 +166,8 @@ namespace RimWorldRealFoW.ShadowCasters {
 				if (x == 0) {
 					bottomY = 0;
 				} else {
-					quotient = (2 * x - 1) * bottomVectorY / (2 * bottomVectorX);
-					remainder = (2 * x - 1) * bottomVectorY % (2 * bottomVectorX);
+					quotient = (x2 - 1) * bottomVectorY / (2 * bottomVectorX);
+					remainder = (x2 - 1) * bottomVectorY % (2 * bottomVectorX);
 
 					if (remainder >= bottomVectorX) {
 						bottomY = quotient + 1;
@@ -191,6 +196,8 @@ namespace RimWorldRealFoW.ShadowCasters {
 				}
 
 				for (int y = topY; y >= bottomY; --y) {
+					y2 = 2 * y;
+
 					if (octant == 1 || octant == 6) {
 						worldX = startX + y;
 					} else if (octant == 2 || octant == 5) {
@@ -202,7 +209,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 					}
 
 					// Is the lower-left corner of cell (x,y) within the radius?
-					inRadius = (2 * x - 1) * (2 * x - 1) + (2 * y - 1) * (2 * y - 1) <= r_r_4;
+					inRadius = (x2 - 1) * (x2 - 1) + (y2 - 1) * (y2 - 1) <= r_r_4;
 
 					if (inRadius && worldX >= 0 && worldY >= 0 && worldX < maxX && worldY < maxY) {
 						if (targetX == -1) {
@@ -251,7 +258,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 									oldFovGrid, oldFovGridMinX, oldFovGridMaxX, oldFovGridMinY, oldFovGridMaxY, oldFovGridWidth, 
 									radius, r_r_4, startX, startY, maxX, maxY, viewBlockerCells, 
 									handleSeenAndCache, mapCompSeenFog, faction, factionShownCells,
-									targetX, targetY, x + 1, topVectorX, topVectorY, x * 2 - 1, y * 2 + 1);
+									targetX, targetY, x + 1, topVectorX, topVectorY, x2 - 1, y2 + 1);
 								if (targetX != -1 && fovGrid[0]) {
 									// Quit if looking for target and found it.
 									return;
@@ -265,8 +272,8 @@ namespace RimWorldRealFoW.ShadowCasters {
 							// The new top vector touches the lower right corner of the 
 							// opaque cell that is above the transparent cell, which is
 							// the upper right corner of the current transparent cell.
-							topVectorX = x * 2 + 1;
-							topVectorY = y * 2 + 1;
+							topVectorX = x2 + 1;
+							topVectorY = y2 + 1;
 						}
 					}
 					lastCellCalcuated = true;

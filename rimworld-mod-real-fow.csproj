@@ -45,13 +45,12 @@
     <DefineConstants>Profile</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>libs\0Harmony.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp, Version=0.16.6198.16102, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>libs\Assembly-CSharp.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="HugsLib">
-      <HintPath>libs\HugsLib.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -67,14 +66,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_MoteBubble.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_Designator_Place_Postfix.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_Designator_Mine.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_Designator_Prefix.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_EnvironmentInspectDrawer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_HaulAIUtility.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_InstallationDesignatorDatabase.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_SectionLayer_ThingsPowerGrid.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_SectionLayer_ThingsGeneral.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Pawn.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Install.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Build.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_ReservationUtility.cs" />
     <Compile Include="Sources\RimWorldRealFoW\RealFoWModSettings.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompMainComponent.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompComponentsPositionTracker.cs" />
@@ -86,33 +87,12 @@
     <Compile Include="Sources\RimWorldRealFoW\Utils\MapUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Utils\FoWThingUtils.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_LetterStack.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_WorkGiver_DoBill.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_AreaHomeExpand.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_ZoneAdd_Growing.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_ZoneAddStockpile_Dumping.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_ZoneAddStockpile_Resources.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Tame.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_PlantsCut.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_PlantsHarvest.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Hunt.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_PlantsHarvestWood.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Uninstall.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_SmoothFloor.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_RemoveFloor.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Mine.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Haul.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Deconstruct.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_Claim.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_AreaNoRoofExpand.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedDesignator\FoW_Designator_AreaBuildRoofExpand.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompViewBlockerWatcher.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_GenMapUI.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompHideFromPlayer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\MapComponentSeenFog.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompHiddenable.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompFieldOfViewWatcher.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Utils\ReflectionUtils.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\PatchedThings\FoW_MoteBubble.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MouseoverReadout.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Selector.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\Detours.cs" />
@@ -122,6 +102,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Verb.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Messages.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Utils\ReflectionUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="rimworld-mod-real-fow.licenseheader" />
@@ -137,9 +118,6 @@
     <Content Include="About\Preview.png" />
     <Content Include="Defs\ResearchProjects_Tier2_Surveillance.xml" />
     <Content Include="Defs\Buildings_Surveillance.xml" />
-    <Content Include="Defs\StarterDef.xml">
-      <SubType>Designer</SubType>
-    </Content>
     <Content Include="Languages\English\Keyed\Preferences.xml" />
     <Content Include="Textures\Things\Buildings\SurveillanceCamera.png" />
     <Content Include="Textures\Things\Buildings\WatchTower.png" />
@@ -151,12 +129,11 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
-      xcopy /Q /Y /S /I "$(ProjectDir)Assemblies\*" "$(TargetDir)"
       xcopy /Q /Y /S /I "$(ProjectDir)About\*" "$(TargetDir)..\About"
       xcopy /Q /Y /S /I "$(ProjectDir)Defs\*" "$(TargetDir)..\Defs"
       xcopy /Q /Y /S /I "$(ProjectDir)Textures\*" "$(TargetDir)..\Textures"
       xcopy /Q /Y /S /I "$(ProjectDir)Languages\*" "$(TargetDir)..\Languages"
-</PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>
@@ -168,6 +145,7 @@
   </PropertyGroup>
   <Target Name="AfterBuild" Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Exec WorkingDirectory="$(TargetDir)" Command="&quot;c:\Program Files (x86)\Mono\bin\pdb2mdb.bat&quot; &quot;$(TargetPath)&quot;" />
+    <Exec WorkingDirectory="$(TargetDir)" Command="xcopy /Q /Y /S /I &quot;$(ProjectDir)libs\Debug\*&quot; &quot;$(TargetDir)&quot;" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

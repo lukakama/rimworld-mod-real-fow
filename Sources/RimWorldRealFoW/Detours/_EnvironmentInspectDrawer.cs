@@ -4,11 +4,13 @@ using Verse;
 namespace RimWorldRealFoW.Detours {
 	public static class _EnvironmentInspectDrawer {
 
-		public static bool ShouldShow() {
-			Map map = Find.VisibleMap;
-			MapComponentSeenFog mapCmq = map.getMapComponentSeenFog();
+		public static void ShouldShow_Postfix(ref bool __result) {
+			if (__result) {
+				Map map = Find.VisibleMap;
+				MapComponentSeenFog mapCmq = map.getMapComponentSeenFog();
 
-			return Find.PlaySettings.showEnvironment && !Mouse.IsInputBlockedNow && UI.MouseCell().InBounds(Find.VisibleMap) && !UI.MouseCell().Fogged(Find.VisibleMap) && (mapCmq == null || mapCmq.knownCells[map.cellIndices.CellToIndex(UI.MouseCell())]);
+				__result = (mapCmq == null || mapCmq.knownCells[map.cellIndices.CellToIndex(UI.MouseCell())]);
+			}
 		}
 	}
 }

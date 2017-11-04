@@ -1,22 +1,16 @@
-﻿using RimWorld;
-using RimWorldRealFoW.Utils;
+﻿using RimWorldRealFoW.Utils;
 using Verse;
 using Verse.AI;
 
 namespace RimWorldRealFoW.Detours {
 	public static class _HaulAIUtility {
-		public static Job HaulToStorageJob(Pawn p, Thing t) {
+		public static bool HaulToStorageJob_Prefix(Thing t, Job __result) {
 			if (!t.fowIsVisible()) {
-				return null;
+				__result = null;
+				return false;
 			}
 
-			StoragePriority currentPriority = HaulAIUtility.StoragePriorityAtFor(t.Position, t);
-			IntVec3 storeCell;
-			if (!StoreUtility.TryFindBestBetterStoreCellFor(t, p, p.Map, currentPriority, p.Faction, out storeCell, true)) {
-				JobFailReason.Is(ReflectionUtils.getStaticPrivateValue<string>(typeof(HaulAIUtility), "NoEmptyPlaceLowerTrans"));
-				return null;
-			}
-			return HaulAIUtility.HaulMaxNumToCellJob(p, t, storeCell, false);
+			return true;
 		}
 	}
 }

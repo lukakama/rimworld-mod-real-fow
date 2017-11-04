@@ -21,42 +21,16 @@ using Verse;
 
 namespace RimWorldRealFoW.Detours {
 	static class _Verb {
-		private static bool CanHitCellFromCellIgnoringRange(this Verb _this, IntVec3 sourceSq, IntVec3 targetLoc, bool includeCorners = false) {
-			if (_this.caster.Faction != null) {
-				if (_this.verbProps.mustCastOnOpenGround && (!targetLoc.Standable(_this.caster.Map) || _this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) {
-					return false;
-				}
-				if (_this.verbProps.requireLineOfSight) {
-					if (!includeCorners) {
-						if (!GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true, null, 0, 0) || (!seenByFaction(_this.caster, targetLoc) && !fovLineOfSight(sourceSq, targetLoc, _this.caster))) {
-							return false;
-						}
-					} else if (!GenSight.LineOfSightToEdges(sourceSq, targetLoc, _this.caster.Map, true, null) || (!seenByFaction(_this.caster, targetLoc) && !fovLineOfSight(sourceSq, targetLoc, _this.caster))) {
-						return false;
-					}
-				}
-				return true;
+		private static void CanHitCellFromCellIgnoringRange_Postfix(this Verb __instance, ref bool __result, IntVec3 sourceSq, IntVec3 targetLoc, bool includeCorners = false) {
+			if (__result && __instance.verbProps.requireLineOfSight) {
+				__result = (__instance.caster.Faction != null && seenByFaction(__instance.caster, targetLoc)) || fovLineOfSight(sourceSq, targetLoc, __instance.caster);
 			}
-
-			if (_this.verbProps.mustCastOnOpenGround && (!targetLoc.Standable(_this.caster.Map) || _this.caster.Map.thingGrid.CellContains(targetLoc, ThingCategory.Pawn))) {
-				return false;
-			}
-			if (_this.verbProps.requireLineOfSight) {
-				if (!includeCorners) {
-					if (!GenSight.LineOfSight(sourceSq, targetLoc, _this.caster.Map, true, null, 0, 0)) {
-						return false;
-					}
-				} else if (!GenSight.LineOfSightToEdges(sourceSq, targetLoc, _this.caster.Map, true, null)) {
-					return false;
-				}
-			}
-			return true;
 		}
 
 		private static bool seenByFaction(Thing thing, IntVec3 targetLoc) {
 			MapComponentSeenFog seenFog = thing.Map.getMapComponentSeenFog();
 			if (seenFog != null) {
-				return seenFog.isShown(thing.Faction,targetLoc);
+				return seenFog.isShown(thing.Faction, targetLoc);
 			}
 
 			return true;

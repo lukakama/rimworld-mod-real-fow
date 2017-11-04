@@ -40,10 +40,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			ThingDef def = parent.def;
 			size = def.size;
 			isOneCell = size.z == 1 && size.x == 1;
-			CompMainComponent mainComp = (CompMainComponent) parent.TryGetComp(CompMainComponent.COMP_DEF);
-			if (mainComp != null) {
-				compHideFromPlayer = mainComp.compHideFromPlayer;
-			}
+			compHideFromPlayer = mainComponent.compHideFromPlayer;
 			compAffectVision = parent.TryGetComp<CompAffectVision>();
 
 			lastPosition = iv3Invalid;

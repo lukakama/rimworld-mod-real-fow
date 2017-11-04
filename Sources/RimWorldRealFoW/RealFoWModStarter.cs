@@ -11,115 +11,74 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using Harmony;
 using RimWorld;
 using RimWorld.Planet;
 using RimWorldRealFoW.Detours;
-using RimWorldRealFoW.PatchedDesignators;
-using RimWorldRealFoW.PatchedThings;
+using RimWorldRealFoW.SectionLayers;
 using RimWorldRealFoW.ThingComps;
-using RimWorldRealFoW.Utils;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+#if Profile
 using System.Runtime.InteropServices;
+#endif
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using static RimWorldRealFoW.RealFoWModSettings;
 
 namespace RimWorldRealFoW {
 	[StaticConstructorOnStartup]
-	public class RealFoWModStarter : Def {
+	public class RealFoWModStarter : Mod {
 
-		/*
+#if Profile
 		[DllImport("__Internal")]
 		private static extern void mono_profiler_load(string args);
-		*/
+#endif
 
+		static HarmonyInstance harmony;
 		static RealFoWModStarter() {
-			// Uncomment to enable mono profiling.
-			// mono_profiler_load(@"default:time,file=d:/rimworld-prof.mprf");
+
+#if Profile
+			mono_profiler_load(@"default:time,file=d:/rimworld-prof.mprf");
+#endif
+
+			harmony = HarmonyInstance.Create("com.github.lukakama.rimworldmodrealfow");
+			injectDetours();
+			harmony = null;
 		}
 
-		public RealFoWModStarter() {
-			LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init.", false, null);
-			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init..", false, null);
+		public RealFoWModStarter(ModContentPack content) : base(content) {
+			//LongEventHandler.QueueLongEvent(injectDetours, "Real Fog of War - Init.", false, null);
+			LongEventHandler.QueueLongEvent(injectComponents, "Real Fog of War - Init.", false, null);
+
+			GetSettings<RealFoWModSettings>();
 		}
 
+		public override string SettingsCategory() {
+			return Content.Name;
+		}
+
+		public override void DoSettingsWindowContents(Rect rect) {
+			RealFoWModSettings.DoSettingsWindowContents(rect);
+		}
+		
 		public static void injectComponents() {
 			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefs) {
-				// Patch motes
-				if (typeof(MoteBubble) == def.thingClass) {
-					def.thingClass = typeof(FoW_MoteBubble);
-				}
-
 				ThingCategory thingCategory = def.category;
 				if (typeof(ThingWithComps).IsAssignableFrom(def.thingClass) && 
 						(thingCategory == ThingCategory.Pawn ||
 							thingCategory == ThingCategory.Building ||
 							thingCategory == ThingCategory.Item ||
 							thingCategory == ThingCategory.Filth ||
-							thingCategory == ThingCategory.Gas)) {
+							thingCategory == ThingCategory.Gas ||
+							def.IsBlueprint)) {
 					addComponentAsFirst(def, CompMainComponent.COMP_DEF);
-
-					/*
-					if (thingCategory == ThingCategory.Pawn ||
-							thingCategory == ThingCategory.Building) {
-						addComponentAsFirst(def, CompFieldOfViewWatcher.COMP_DEF);
-					}
-					if (thingCategory == ThingCategory.Building) {
-						addComponentAsFirst(def, CompViewBlockerWatcher.COMP_DEF);
-					}
-
-					addComponentAsFirst(def, CompHideFromPlayer.COMP_DEF);
-					addComponentAsFirst(def, CompHiddenable.COMP_DEF);
-						
-					// This must be the first component triggered on ticks (other component behaviours depend on his trackings),
-					// so it must be added first.
-					addComponentAsFirst(def, CompComponentsPositionTracker.COMP_DEF);
-					*/
 				}
 			}
-		}
-
-		public static void patchDesignators() {
-			// Patch designators
-			long patchedDesignators = 0;
-			long totDesignators = 0;
-
-			foreach (DesignationCategoryDef def in DefDatabase<DesignationCategoryDef>.AllDefs) {
-				// Experienced some null reference, probably due some other mods.
-				if (def != null && ReflectionUtils.hasInstancePrivateField(def, "resolvedDesignators")) {
-					List<Designator> resolvedDesignators = ReflectionUtils.getInstancePrivateValue<List<Designator>>(def, "resolvedDesignators");
-
-					for (int i = 0; i < resolvedDesignators.Count; i++) {
-						totDesignators++;
-
-						Type originalType = resolvedDesignators[i].GetType();
-						Type patchedType = Type.GetType("RimWorldRealFoW.PatchedDesignators.FoW_" + originalType.Name, false);
-
-						if (originalType == typeof(Designator_Build)) {
-							Designator_Build des = (Designator_Build) resolvedDesignators[i];
-							resolvedDesignators[i] = new FoW_Designator_Build(des.PlacingDef);
-
-							patchedDesignators++;
-						} else if (originalType == typeof(Designator_Install)) {
-							Designator_Install des = (Designator_Install) resolvedDesignators[i];
-							resolvedDesignators[i] = new FoW_Designator_Install {
-								hotKey = des.hotKey
-							};
-
-							patchedDesignators++;
-						} else if (patchedType != null) {
-							resolvedDesignators[i] = (Designator) Activator.CreateInstance(patchedType);
-
-							patchedDesignators++;
-						}
-					}
-				}
-			}
-
-			Log.Message("Patched " + patchedDesignators + " designators on " + totDesignators + ".");
 		}
 
 		public static void addComponentAsFirst(ThingDef def, CompProperties compProperties) {
@@ -133,51 +92,119 @@ namespace RimWorldRealFoW {
 			detour(typeof(Selector), typeof(_Selector), "Select");
 			detour(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
 			
-			//detour(typeof(PawnUIOverlay), typeof(_PawnUIOverlay), "DrawPawnGUIOverlay");
 			detour(typeof(Pawn), typeof(_Pawn), "DrawGUIOverlay");
 
 			detour(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
 			detour(typeof(SectionLayer_ThingsGeneral), typeof(_SectionLayer_ThingsGeneral), "TakePrintFrom");
 			detour(typeof(SectionLayer_ThingsPowerGrid), typeof(_SectionLayer_ThingsPowerGrid), "TakePrintFrom");
-			detour(typeof(WorkGiver_DoBill), typeof(_WorkGiver_DoBill), "TryFindBestBillIngredients");
+			detour(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserve");
+			detour(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserveAndReach");
 			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
-
-			detour(typeof(InstallationDesignatorDatabase), typeof(_InstallationDesignatorDatabase), "NewDesignatorFor");
 
 			detour(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
 			
 			detour(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageSound));
 			detour(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(GlobalTargetInfo), typeof(string));
+
+			detour(typeof(MoteBubble), typeof(_MoteBubble), "Draw");
+
+			// Area only designators:
+			detour(typeof(Designator_AreaBuildRoofExpand), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_AreaHomeExpand), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_AreaNoRoofExpand), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_ZoneAdd_Growing), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_ZoneAddStockpile_Dumping), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_ZoneAddStockpile_Resources), typeof(_Designator_Prefix), "CanDesignateCell");
+
+			// Area + thing designators:
+			detour(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_Deconstruct), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_Deconstruct), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateThing");
+			detour(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateThing");
+			
+			// Placing designators:
+			detour(typeof(Designator_Build), typeof(_Designator_Place_Postfix), "CanDesignateCell");
+			detour(typeof(Designator_Install), typeof(_Designator_Place_Postfix), "CanDesignateCell");
+			
+			// Specific designatos:
+			detour(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
 		}
 
 		public static void detour(Type sourceType, Type targetType, string methodName, params Type[] types) {
-			MethodInfo method;
+			MethodInfo method = null;
 			if (types.Length != 0) {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
 			} else {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll);
 			}
+
 			if (method != null) {
-				MethodInfo newMethod;
+				MethodInfo newMethodPrefix = null;
 				if (types.Length != 0) {
-					newMethod = targetType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
-					if (newMethod == null) {
-						newMethod = targetType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, (new Type[] { sourceType }).Concat(types).ToArray(), null);
+					newMethodPrefix = targetType.GetMethod(methodName + "_Prefix", GenGeneric.BindingFlagsAll, null, types, null);
+					if (newMethodPrefix == null) {
+						newMethodPrefix = targetType.GetMethod(methodName + "_Prefix", GenGeneric.BindingFlagsAll, null, (new Type[] { sourceType }).Concat(types).ToArray(), null);
 					}
-				} else {
-					newMethod = targetType.GetMethod(methodName, GenGeneric.BindingFlagsAll);
 				}
-				if (newMethod != null) {
-					if (DetoursApplier.TryDetourFromTo(method, newMethod)) {
+				if (newMethodPrefix == null) {
+					newMethodPrefix = targetType.GetMethod(methodName + "_Prefix", GenGeneric.BindingFlagsAll);
+				}
+
+				MethodInfo newMethodPostfix = null;
+				if (types.Length != 0) {
+					newMethodPostfix = targetType.GetMethod(methodName + "_Postfix", GenGeneric.BindingFlagsAll, null, types, null);
+					if (newMethodPostfix == null) {
+						newMethodPostfix = targetType.GetMethod(methodName + "_Postfix", GenGeneric.BindingFlagsAll, null, (new Type[] { sourceType }).Concat(types).ToArray(), null);
+					}
+				}
+				if (newMethodPostfix == null) {
+					newMethodPostfix = targetType.GetMethod(methodName + "_Postfix", GenGeneric.BindingFlagsAll);
+				}
+
+				if (newMethodPrefix != null || newMethodPostfix != null) {
+					if (patchWithHarmony(method, newMethodPrefix, newMethodPostfix)) {
 						Log.Message("Detoured method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
 					} else {
 						Log.Warning("Unable to detoure method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
 					}
 				} else {
-					Log.Warning("Target method " + methodName + " not found for detour from source " + sourceType + " to " + targetType + ".");
+					Log.Warning("Target method prefix or suffix " + methodName + " not found for detour from source " + sourceType + " to " + targetType + ".");
 				}
 			} else {
 				Log.Warning("Source method " + methodName + " not found for detour from source " + sourceType + " to " + targetType + ".");
+			}
+		}
+
+		public static bool patchWithHarmony(MethodInfo original, MethodInfo prefix, MethodInfo postfix) {
+			try {
+				HarmonyMethod harmonyPrefix = prefix != null ? new HarmonyMethod(prefix) : null;
+				HarmonyMethod harmonyPostfix = postfix != null ? new HarmonyMethod(postfix) : null;
+
+				harmony.Patch(original, harmonyPrefix, harmonyPostfix);
+
+				return true;
+			} catch (Exception ex) {
+				Log.Warning("Error patching with Harmony: " + ex.Message);
+				Log.Warning(ex.StackTrace);
+				return false;
 			}
 		}
 	}

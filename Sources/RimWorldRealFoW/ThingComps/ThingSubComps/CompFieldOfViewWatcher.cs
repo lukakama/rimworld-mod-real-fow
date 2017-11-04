@@ -105,8 +105,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			viewRect = new CellRect(-1, -1, 0, 0);
 
 			viewPositions = new IntVec3[5];
-			
-			compHiddenable = parent.TryGetCompHiddenable();
+
+			compHiddenable = mainComponent.compHiddenable;
 			compGlower = parent.GetComp<CompGlower>();
 			compPowerTrader = parent.GetComp<CompPowerTrader>();
 			compRefuelable = parent.GetComp<CompRefuelable>();
@@ -521,7 +521,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			int oldViewArea = viewRect.Area;
 
 
-			// Clear or reset the new view map.
+			// Create the new view map if needed.
 			if (newViewMap == null || newViewMap.Length < newViewArea) {
 				newViewMap = new bool[(int) (newViewArea * 1.5f)];
 				if (viewMapSwitch) {
@@ -529,8 +529,6 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				} else {
 					this.viewMap1 = newViewMap;
 				}
-			} else {
-				Array.Clear(newViewMap, 0, newViewArea);
 			}
 
 			// Occupied cells are always visible.
@@ -594,6 +592,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			if (oldViewMap != null) {
 				for (int i = 0; i < oldViewArea; i++) {
 					if (oldViewMap[i]) {
+						oldViewMap[i] = false;
+
 						oldX = oldViewRectMinX + (i % oldViewWidth);
 						oldZ = oldViewRectMinZ + (i / oldViewWidth);
 						if (oldZ >= 0 && oldZ <= mapSizeZ && oldX >= 0 && oldX <= mapSizeX) {
@@ -632,12 +632,13 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				int z;
 				for (int i = 0; i < viewArea; i++) {
 					if (viewMap[i]) {
+						viewMap[i] = false;
+
 						x = viewRectMinX + (i % viewWidth);
 						z = viewRectMinZ + (i / viewWidth);
 						if (z >= 0 && z <= mapZ && x >= 0 && x <= mapX) {
 							mapCompSeenFog.decrementSeen(faction, factionShownCells, (z * mapX) + x);
 						}
-						viewMap[i] = false;
 					}
 				}
 

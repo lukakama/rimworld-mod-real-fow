@@ -16,34 +16,12 @@ using Verse;
 
 namespace RimWorldRealFoW.Detours {
 	static class _Pawn {
-		public static void DrawGUIOverlay(this Pawn _this) {
-			if (!_this.Spawned || _this.Map.fogGrid.IsFogged(_this.Position)) {
-				return;
+		public static bool DrawGUIOverlay_Prefix(Pawn __instance) {
+			if (__instance.Spawned && !__instance.fowIsVisible()) {
+				return false;
 			}
 
-			if (!_this.RaceProps.Humanlike) {
-				switch (Prefs.AnimalNameMode) {
-					case AnimalNameDisplayMode.None:
-						return;
-					case AnimalNameDisplayMode.TameNamed:
-						if (_this.Name == null || _this.Name.Numerical) {
-							return;
-						}
-						break;
-					case AnimalNameDisplayMode.TameAll:
-						if (_this.Name == null) {
-							return;
-						}
-						break;
-				}
-			}
-
-
-			if (!_this.fowIsVisible()) {
-				return;
-			}
-
-			_this.Drawer.ui.DrawPawnGUIOverlay();
+			return true;
 		}
 
 	}

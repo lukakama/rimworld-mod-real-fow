@@ -8,7 +8,7 @@ namespace RimWorldRealFoW.Utils {
 		public static bool fowIsVisible(this Thing _this, bool forRender = false) {
 			if (_this.Spawned) {
 				if (_this.def.isSaveable && !_this.def.saveCompressible) {
-					CompHiddenable comp = (CompHiddenable)_this.TryGetCompHiddenable();
+					CompHiddenable comp = _this.TryGetCompHiddenable();
 					if (comp != null) {
 						return !comp.hidden;
 					}
@@ -43,7 +43,8 @@ namespace RimWorldRealFoW.Utils {
 					thingCategory == ThingCategory.Building ||
 					thingCategory == ThingCategory.Item ||
 					thingCategory == ThingCategory.Filth ||
-					thingCategory == ThingCategory.Gas) {
+					thingCategory == ThingCategory.Gas ||
+					_this.def.IsBlueprint) {
 
 				ThingWithComps thingWithComps = _this as ThingWithComps;
 				if (thingWithComps != null) {
