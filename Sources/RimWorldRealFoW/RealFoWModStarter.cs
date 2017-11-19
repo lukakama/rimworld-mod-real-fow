@@ -103,15 +103,15 @@ namespace RimWorldRealFoW {
 
 			detour(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
 			
-			detour(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageSound));
+			detour(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageTypeDef));
 			detour(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(GlobalTargetInfo), typeof(string));
 
 			detour(typeof(MoteBubble), typeof(_MoteBubble), "Draw");
 
 			// Area only designators:
-			detour(typeof(Designator_AreaBuildRoofExpand), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_AreaBuildRoof), typeof(_Designator_Prefix), "CanDesignateCell");
 			detour(typeof(Designator_AreaHomeExpand), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_AreaNoRoofExpand), typeof(_Designator_Prefix), "CanDesignateCell");
+			detour(typeof(Designator_AreaNoRoof), typeof(_Designator_Prefix), "CanDesignateCell");
 			detour(typeof(Designator_ZoneAdd_Growing), typeof(_Designator_Prefix), "CanDesignateCell");
 			detour(typeof(Designator_ZoneAddStockpile_Dumping), typeof(_Designator_Prefix), "CanDesignateCell");
 			detour(typeof(Designator_ZoneAddStockpile_Resources), typeof(_Designator_Prefix), "CanDesignateCell");

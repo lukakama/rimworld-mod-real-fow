@@ -114,7 +114,7 @@ namespace RimWorldRealFoW.SectionLayers {
 				sm.tris.Add(num2 + 8);
 				num2 += 9;
 			}
-			sm.FinalizeMesh(MeshParts.Verts | MeshParts.Tris, false);
+			sm.FinalizeMesh(MeshParts.Verts | MeshParts.Tris);
 		}
 
 		public override void Regenerate() {

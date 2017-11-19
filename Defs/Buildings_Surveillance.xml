@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ThingDefs>
+<Defs>
 
   <!-- Surveillance Camera -->
   <ThingDef ParentName="BuildingBase">
@@ -11,7 +11,7 @@
 
     <category>Building</category>
     <minifiedDef>MinifiedFurniture</minifiedDef>
-    <altitudeLayer>FlyingItem</altitudeLayer>
+    <altitudeLayer>Skyfaller</altitudeLayer>
     <passability>Standable</passability>
     <selectable>true</selectable>
     <leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
@@ -125,4 +125,4 @@
     </comps>
   </ThingDef>
 
-</ThingDefs>
+</Defs>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ResearchProjectDefs>
+<Defs>
 
   <!--=============================== Tier 2.5 Microelectronics ===================================-->
 
@@ -16,4 +16,4 @@
     <researchViewX>8</researchViewX>
     <researchViewY>1</researchViewY>
   </ResearchProjectDef>
-</ResearchProjectDefs>
+</Defs>

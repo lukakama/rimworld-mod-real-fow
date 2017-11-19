@@ -188,7 +188,7 @@ namespace RimWorldRealFoW {
 		public override void ExposeData() {
 			base.ExposeData();
 
-			ArrayExposeUtility.ExposeBoolArray(ref knownCells, map.Size.x, map.Size.z, "revealedCells");
+			DataExposeUtility.BoolArray(ref knownCells, map.Size.x * map.Size.z, "revealedCells");
 		}
 
 		public void revealCell(int idx) {
@@ -198,7 +198,7 @@ namespace RimWorldRealFoW {
 				knownCells[idx] = true;
 
 				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
-				if (designation != null && MineUtility.MineableInCell(cell, map) == null) {
+				if (designation != null && cell.GetFirstMineable(map) == null) {
 					designation.Delete();
 				}
 
@@ -222,7 +222,7 @@ namespace RimWorldRealFoW {
 					knownCells[idx] = true;
 
 					Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
-					if (designation != null && MineUtility.MineableInCell(cell, map) == null) {
+					if (designation != null && cell.GetFirstMineable(map) == null) {
 						designation.Delete();
 					}
 
