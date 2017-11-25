@@ -192,6 +192,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				glowGrid = map.glowGrid;
 				roofGrid = map.roofGrid;
 				weatherManager = map.weatherManager;
+				lastFactionShownCells = mapCompSeenFog.getFactionShownCells(parent.Faction);
 
 				mapSizeX = map.Size.x;
 				mapSizeZ = map.Size.z;
