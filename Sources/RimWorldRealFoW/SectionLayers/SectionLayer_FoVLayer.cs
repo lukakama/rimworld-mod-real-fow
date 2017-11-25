@@ -122,7 +122,7 @@ namespace RimWorldRealFoW.SectionLayers {
 				pawnFog = base.Map.getMapComponentSeenFog();
 			}
 
-			if (pawnFog != null) {
+			if (pawnFog != null && pawnFog.initialized) {
 				LayerSubMesh subMesh = base.GetSubMesh(MatBases.FogOfWar);
 				bool firstGeneration;
 				if (subMesh.mesh.vertexCount == 0) {
