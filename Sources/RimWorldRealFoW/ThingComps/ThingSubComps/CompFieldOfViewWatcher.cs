@@ -478,18 +478,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			}
 		}
 
-		//static int profileCount = 0;
-
 		public void calculateFoV(Thing thing, int intRadius, bool peek) {
-			//if (!(thing is Pawn)) {
-			//	Log.Message("calculateFoV: " + thing.ThingID);
-			//}
-			/*
-			if (profileCount++ > 1500) {
-				Application.Quit();
-			}
-			*/
-
 			int mapSizeX = this.mapSizeX;
 			int mapSizeZ = this.mapSizeZ;
 
@@ -524,7 +513,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 			// Create the new view map if needed.
 			if (newViewMap == null || newViewMap.Length < newViewArea) {
-				newViewMap = new bool[(int) (newViewArea * 1.5f)];
+				newViewMap = new bool[(int) (newViewArea * 1.20f)];
 				if (viewMapSwitch) {
 					this.viewMap2 = newViewMap;
 				} else {
@@ -543,12 +532,13 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 						mapCompSeenFog.incrementSeen(faction, factionShownCells, (occupiedZ * mapSizeX) + occupiedX);
 					} else {
 						oldViewRectIdx = ((occupiedZ - oldViewRectMinZ) * oldViewWidth) + (occupiedX - oldViewRectMinX);
-						if (!oldViewMap[oldViewRectIdx]) {
+						ref bool oldViewMapValue = ref oldViewMap[oldViewRectIdx];
+						if (!oldViewMapValue) {
 							// Old cell was not visible. Increment seen counter in global grid.
 							mapCompSeenFog.incrementSeen(faction, factionShownCells, (occupiedZ * mapSizeX) + occupiedX);
 						} else {
 							// Old cell was already visible. Mark it to not be unseen.
-							oldViewMap[oldViewRectIdx] = false;
+							oldViewMapValue = false;
 						}
 					}
 				}
@@ -573,9 +563,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				int mapWitdh = map.Size.x - 1;
 				int mapHeight = map.Size.z - 1;
 
-				IntVec3 viewPosition;
 				for (int i = 0; i < viewPositionsCount; i++) {
-					viewPosition = viewPositions[i];
+					ref IntVec3 viewPosition = ref viewPositions[i];
 					if (viewPosition.x >= 0 && viewPosition.z >= 0 && viewPosition.x <= mapWitdh && viewPosition.z <= mapHeight &&
 								(i == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[(viewPosition.z * mapSizeX)  + viewPosition.x])) {
 						ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
@@ -592,8 +581,9 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			int oldZ;
 			if (oldViewMap != null) {
 				for (int i = 0; i < oldViewArea; i++) {
-					if (oldViewMap[i]) {
-						oldViewMap[i] = false;
+					ref bool oldViewMapVisible = ref oldViewMap[i];
+					if (oldViewMapVisible) {
+						oldViewMapVisible = false;
 
 						oldX = oldViewRectMinX + (i % oldViewWidth);
 						oldZ = oldViewRectMinZ + (i / oldViewWidth);
