@@ -171,6 +171,20 @@ namespace RimWorldRealFoW.ThingComps {
 			if (compFieldOfViewWatcher != null) {
 				compFieldOfViewWatcher.PostExposeData();
 			}
+
+			if (Scribe.saver.savingForDebug) {
+				bool hasCompComponentsPositionTracker = compComponentsPositionTracker != null;
+				bool hasCompHiddenable = compHiddenable != null;
+				bool hasCompHideFromPlayer = compHideFromPlayer != null;
+				bool hasCompViewBlockerWatcher = compViewBlockerWatcher != null;
+				bool hasCompFieldOfViewWatcher = compFieldOfViewWatcher != null;
+
+				Scribe_Values.Look<bool>(ref hasCompComponentsPositionTracker, "hasCompComponentsPositionTracker");
+				Scribe_Values.Look<bool>(ref hasCompHiddenable, "hasCompHiddenable");
+				Scribe_Values.Look<bool>(ref hasCompHideFromPlayer, "hasCompHideFromPlayer");
+				Scribe_Values.Look<bool>(ref hasCompViewBlockerWatcher, "hasCompViewBlockerWatcher");
+				Scribe_Values.Look<bool>(ref hasCompFieldOfViewWatcher, "hasCompFieldOfViewWatcher");
+			}
 		}
 	}
 }
