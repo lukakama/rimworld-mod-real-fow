@@ -88,67 +88,66 @@ namespace RimWorldRealFoW {
 		}
 
 		public static void injectDetours() {
-			detour(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
-			detour(typeof(Selector), typeof(_Selector), "Select");
-			detour(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
+			patchMethod(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
+			patchMethod(typeof(Selector), typeof(_Selector), "Select");
+			patchMethod(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
 			
-			detour(typeof(Pawn), typeof(_Pawn), "DrawGUIOverlay");
+			patchMethod(typeof(Pawn), typeof(_Pawn), "DrawGUIOverlay");
 
-			detour(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
-			detour(typeof(SectionLayer_ThingsGeneral), typeof(_SectionLayer_ThingsGeneral), "TakePrintFrom");
-			detour(typeof(SectionLayer_ThingsPowerGrid), typeof(_SectionLayer_ThingsPowerGrid), "TakePrintFrom");
-			detour(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserve");
-			detour(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserveAndReach");
-			detour(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
+			patchMethod(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
+			patchMethod(typeof(SectionLayer_ThingsGeneral), typeof(_SectionLayer_ThingsGeneral), "TakePrintFrom");
+			patchMethod(typeof(SectionLayer_ThingsPowerGrid), typeof(_SectionLayer_ThingsPowerGrid), "TakePrintFrom");
+			patchMethod(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserve");
+			patchMethod(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserveAndReach");
+			patchMethod(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
 
-			detour(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
+			patchMethod(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
 			
-			detour(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageTypeDef));
-			detour(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(GlobalTargetInfo), typeof(string));
+			patchMethod(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageTypeDef));
+			patchMethod(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(GlobalTargetInfo), typeof(string));
 
-			detour(typeof(MoteBubble), typeof(_MoteBubble), "Draw");
+			patchMethod(typeof(MoteBubble), typeof(_MoteBubble), "Draw");
 
 			// Area only designators:
-			detour(typeof(Designator_AreaBuildRoof), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_AreaHomeExpand), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_AreaNoRoof), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_ZoneAdd_Growing), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_ZoneAddStockpile_Dumping), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_ZoneAddStockpile_Resources), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_AreaBuildRoof), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_AreaNoRoof), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_ZoneAdd_Growing), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_ZoneAddStockpile_Dumping), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_ZoneAddStockpile_Resources), typeof(_Designator_Prefix), "CanDesignateCell");
 
 			// Area + thing designators:
-			detour(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_Deconstruct), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_Deconstruct), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateThing");
-			detour(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateCell");
-			detour(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_Deconstruct), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Deconstruct), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateThing");
 			
 			// Placing designators:
-			detour(typeof(Designator_Build), typeof(_Designator_Place_Postfix), "CanDesignateCell");
-			detour(typeof(Designator_Install), typeof(_Designator_Place_Postfix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Build), typeof(_Designator_Place_Postfix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Install), typeof(_Designator_Place_Postfix), "CanDesignateCell");
 			
 			// Specific designatos:
-			detour(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
+			patchMethod(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
 		}
 
-		public static void detour(Type sourceType, Type targetType, string methodName, params Type[] types) {
+		public static void patchMethod(Type sourceType, Type targetType, string methodName, params Type[] types) {
 			MethodInfo method = null;
 			if (types.Length != 0) {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
@@ -181,15 +180,15 @@ namespace RimWorldRealFoW {
 
 				if (newMethodPrefix != null || newMethodPostfix != null) {
 					if (patchWithHarmony(method, newMethodPrefix, newMethodPostfix)) {
-						Log.Message("Detoured method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
+						Log.Message("Patched method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
 					} else {
-						Log.Warning("Unable to detoure method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
+						Log.Warning("Unable to patch method " + method.ToString() + " from source " + sourceType + " to " + targetType + ".");
 					}
 				} else {
-					Log.Warning("Target method prefix or suffix " + methodName + " not found for detour from source " + sourceType + " to " + targetType + ".");
+					Log.Warning("Target method prefix or suffix " + methodName + " not found for patch from source " + sourceType + " to " + targetType + ".");
 				}
 			} else {
-				Log.Warning("Source method " + methodName + " not found for detour from source " + sourceType + " to " + targetType + ".");
+				Log.Warning("Source method " + methodName + " not found for patch from source " + sourceType + " to " + targetType + ".");
 			}
 		}
 
