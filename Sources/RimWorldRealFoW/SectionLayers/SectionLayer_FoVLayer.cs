@@ -13,6 +13,7 @@
 //   limitations under the License.
 using RimWorld;
 using RimWorldRealFoW.Utils;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -118,6 +119,10 @@ namespace RimWorldRealFoW.SectionLayers {
 		}
 
 		public override void Regenerate() {
+			if (Current.ProgramState != ProgramState.Playing) {
+				return;
+			}
+
 			if (pawnFog == null) {
 				pawnFog = base.Map.getMapComponentSeenFog();
 			}
@@ -132,13 +137,9 @@ namespace RimWorldRealFoW.SectionLayers {
 
 					MakeBaseGeometry(this.section, subMesh, AltitudeLayer.FogOfWar);
 
-					//subMesh.colors = new List<Color32>(subMesh.mesh.vertexCount);
-
-					if (prefEnableFade) {
-						targetAlphas = new byte[subMesh.mesh.vertexCount];
-						alphaChangeTick = new long[subMesh.mesh.vertexCount];
-						meshColors = new Color32[subMesh.mesh.vertexCount];
-					}
+					targetAlphas = new byte[subMesh.mesh.vertexCount];
+					alphaChangeTick = new long[subMesh.mesh.vertexCount];
+					meshColors = new Color32[subMesh.mesh.vertexCount];
 				} else {
 					firstGeneration = false;
 				}
@@ -158,10 +159,10 @@ namespace RimWorldRealFoW.SectionLayers {
 				CellRect cellRect = this.section.CellRect;
 				int mapHeight = base.Map.Size.z - 1;
 				int mapWidth = mapSizeX - 1;
-				
-				
+
+
 				bool hasFoggedVerts = false;
-				long fogTransitionTick = (long) (Find.TickManager.TicksGame * prefFadeSpeedMult);
+				long fogTransitionTick = (long)(Find.TickManager.TicksGame * prefFadeSpeedMult);
 
 				int cellIdx;
 				int cellIdxN;
@@ -317,7 +318,7 @@ namespace RimWorldRealFoW.SectionLayers {
 								}
 
 								hasFoggedVerts = true;
-							} else { 
+							} else {
 								alpha = 0;
 							}
 
