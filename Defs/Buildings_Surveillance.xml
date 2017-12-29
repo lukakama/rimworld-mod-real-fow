@@ -1,128 +1,130 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Defs>
 
-  <!-- Surveillance Camera -->
-  <ThingDef ParentName="BuildingBase">
-    <thingClass>Building</thingClass>
+	<!-- Surveillance Camera -->
+	<ThingDef ParentName="BuildingBase">
+		<thingClass>Building</thingClass>
 
-    <defName>SurveillanceCamera</defName>
-    <label>surveillance camera</label>
-    <description>Surveillance camera that provide vision for an area.</description>
+		<defName>SurveillanceCamera</defName>
+		<label>surveillance camera</label>
+		<description>Surveillance camera that provide vision for an area.</description>
 
-    <category>Building</category>
-    <minifiedDef>MinifiedFurniture</minifiedDef>
-    <altitudeLayer>Skyfaller</altitudeLayer>
-    <passability>Standable</passability>
-    <selectable>true</selectable>
-    <leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
-    <soundImpactDefault>BulletImpactMetal</soundImpactDefault>
-    <designationCategory>Security</designationCategory>
-    <rotatable>false</rotatable>
-    <stealable>true</stealable>
+		<category>Building</category>
+		<minifiedDef>MinifiedFurniture</minifiedDef>
+		<altitudeLayer>Skyfaller</altitudeLayer>
+		<passability>Standable</passability>
+		<selectable>true</selectable>
+		<leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
+		<soundImpactDefault>BulletImpactMetal</soundImpactDefault>
+		<designationCategory>Security</designationCategory>
+		<rotatable>false</rotatable>
+		<stealable>true</stealable>
 
-    <graphicData>
-      <texPath>Things/Buildings/SurveillanceCamera</texPath>
-      <graphicClass>Graphic_Single</graphicClass>
-      <shadowData>
-        <volume>(0.3, 0.6, 0.3)</volume>
-        <offset>(0,0,-0.1)</offset>
-      </shadowData>
-      <damageData>
-        <rect>(0.2,0.2,0.6,0.6)</rect>
-      </damageData>
-    </graphicData>
+		<graphicData>
+			<texPath>Things/Buildings/SurveillanceCamera</texPath>
+			<graphicClass>Graphic_Single</graphicClass>
+			<shadowData>
+				<volume>(0.3, 0.6, 0.3)</volume>
+				<offset>(0,0,-0.1)</offset>
+			</shadowData>
+			<damageData>
+				<rect>(0.2,0.2,0.6,0.6)</rect>
+			</damageData>
+		</graphicData>
 
-    <costList>
-      <Steel>50</Steel>
-      <Component>2</Component>
-    </costList>
+		<costList>
+			<Steel>50</Steel>
+			<Component>2</Component>
+		</costList>
 
-    <statBases>
-      <Mass>4</Mass>
-      <Beauty>-10</Beauty>
+		<statBases>
+			<Mass>4</Mass>
+			<Beauty>-10</Beauty>
 
-      <MaxHitPoints>50</MaxHitPoints>
-      <WorkToBuild>1000</WorkToBuild>
-      <Flammability>1.0</Flammability>
-    </statBases>
+			<MaxHitPoints>50</MaxHitPoints>
+			<WorkToBuild>1000</WorkToBuild>
+			<Flammability>1.0</Flammability>
+		</statBases>
 
-    <comps>
-      <li Class="CompProperties_Breakdownable"/>
-      <li Class="CompProperties_Flickable"/>
-      <li Class="CompProperties_Power">
-        <compClass>CompPowerTrader</compClass>
-        <basePowerConsumption>250</basePowerConsumption>
-        <shortCircuitInRain>false</shortCircuitInRain>
-      </li>
-      <li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_ProvideVision">
-        <viewRadius>12</viewRadius>
-      </li>
-    </comps>
+		<comps>
+			<li Class="CompProperties_Breakdownable"/>
+			<li Class="CompProperties_Flickable"/>
+			<li Class="CompProperties_Power">
+				<compClass>CompPowerTrader</compClass>
+				<basePowerConsumption>250</basePowerConsumption>
+				<shortCircuitInRain>false</shortCircuitInRain>
+			</li>
+			<li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_ProvideVision">
+				<viewRadius>12</viewRadius>
+			</li>
+		</comps>
 
-    <researchPrerequisites>
-      <li>SurveillanceCamera</li>
-    </researchPrerequisites>
-  </ThingDef>
+		<researchPrerequisites>
+			<li>SurveillanceCamera</li>
+		</researchPrerequisites>
+	</ThingDef>
 
-  <!-- Watch Tower -->
-  <ThingDef ParentName="BuildingBase">
-    <thingClass>Building</thingClass>
+	<!-- Watch Tower -->
+	<ThingDef ParentName="BuildingBase">
+		<thingClass>Building</thingClass>
 
-    <defName>WatchTower</defName>
-    <label>watch tower</label>
-    <description>Watch Tower that increase vision when pawns stand on it.</description>
+		<defName>WatchTower</defName>
+		<label>watch tower</label>
+		<description>Watch Tower that increase vision when colonists stand on it.</description>
 
-    <category>Building</category>
-    <altitudeLayer>Building</altitudeLayer>
-    <passability>Standable</passability>
-    <selectable>true</selectable>
-    <leaveResourcesWhenKilled>true</leaveResourcesWhenKilled>
-    <designationCategory>Security</designationCategory>
-    <rotatable>false</rotatable>
-    <stealable>false</stealable>
+		<category>Building</category>
+		<altitudeLayer>Building</altitudeLayer>
+		<passability>Standable</passability>
+		<selectable>true</selectable>
+		<leaveResourcesWhenKilled>true</leaveResourcesWhenKilled>
+		<designationCategory>Security</designationCategory>
+		<rotatable>false</rotatable>
+		<stealable>false</stealable>
 
-    <stuffCategories>
-      <li>Metallic</li>
-      <li>Woody</li>
-      <li>Stony</li>
-    </stuffCategories>
+		<stuffCategories>
+			<li>Metallic</li>
+			<li>Woody</li>
+			<li>Stony</li>
+		</stuffCategories>
 
-    <graphicData>
-      <texPath>Things/Buildings/WatchTower</texPath>
-      <graphicClass>Graphic_Single</graphicClass>
-      <drawSize>(2,2)</drawSize>
-      <damageData>
-        <rect>(0.1,0.1,1.8,1.8)</rect>
-      </damageData>
-    </graphicData>
+		<graphicData>
+			<texPath>Things/Buildings/WatchTower</texPath>
+			<graphicClass>Graphic_Single</graphicClass>
+			<drawSize>(2,2)</drawSize>
+			<damageData>
+				<rect>(0.1,0.1,1.8,1.8)</rect>
+			</damageData>
+		</graphicData>
 
-    <castEdgeShadows>true</castEdgeShadows>
-    <staticSunShadowHeight>1.0</staticSunShadowHeight>
-    <fillPercent>0.5</fillPercent>
+		<castEdgeShadows>true</castEdgeShadows>
+		<staticSunShadowHeight>1.0</staticSunShadowHeight>
+		
+		<fillPercent>0.70</fillPercent>
 
-    <size>(2,2)</size>
+		<size>(2,2)</size>
 
-    <pathCost>200</pathCost>
+		<pathCost>200</pathCost>
+		<pathCostIgnoreRepeat>true</pathCostIgnoreRepeat>
 
-    <costStuffCount>200</costStuffCount>
+		<costStuffCount>200</costStuffCount>
 
-    <placeWorkers>
-      <li>PlaceWorker_NotUnderRoof</li>
-    </placeWorkers>
+		<placeWorkers>
+			<li>PlaceWorker_NotUnderRoof</li>
+		</placeWorkers>
 
-    <statBases>
-      <MaxHitPoints>150</MaxHitPoints>
-      <WorkToBuild>4000</WorkToBuild>
-      <Mass>20</Mass>
-      <Flammability>1.0</Flammability>
-      <Beauty>-60</Beauty>
-    </statBases>
+		<statBases>
+			<MaxHitPoints>150</MaxHitPoints>
+			<WorkToBuild>4000</WorkToBuild>
+			<Mass>20</Mass>
+			<Flammability>1.0</Flammability>
+			<Beauty>-60</Beauty>
+		</statBases>
 
-    <comps>
-      <li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_AffectVision">
-        <fovMultiplier>1.5</fovMultiplier>
-      </li>
-    </comps>
-  </ThingDef>
+		<comps>
+			<li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_AffectVision">
+				<fovMultiplier>1.5</fovMultiplier>
+			</li>
+		</comps>
+	</ThingDef>
 
 </Defs>
