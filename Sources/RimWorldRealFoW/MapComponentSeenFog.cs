@@ -215,47 +215,33 @@ namespace RimWorldRealFoW {
 		}
 
 		public void incrementSeen(Faction faction, int[] factionShownCells, int idx) {
-			// try {
-				if ((++factionShownCells[idx] == 1) && faction.IsPlayer) {
-					IntVec3 cell = idxToCellCache[idx];
+			if ((++factionShownCells[idx] == 1) && faction.IsPlayer) {
+				IntVec3 cell = idxToCellCache[idx];
 
-					knownCells[idx] = true;
+				knownCells[idx] = true;
 
-					Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
-					if (designation != null && cell.GetFirstMineable(map) == null) {
-						designation.Delete();
-					}
-
-					if (initialized) {
-						mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
-					}
-
-					List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
-					int compCount = comps.Count;
-					for (int i = 0; i < compCount; i++) {
-						comps[i].updateVisibility(true);
-					}
+				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
+				if (designation != null && cell.GetFirstMineable(map) == null) {
+					designation.Delete();
 				}
-			// } catch (Exception ex) {
-			// 	Log.Message("Error: " + ex.StackTrace);
-			// 	Log.Message(" facton: " + faction.Name);
-			// 	Log.Message(" facton.isPlayer: " + faction.IsPlayer);
-			// 	Log.Message(" factionShownCells.Length: " + factionShownCells.Length);
-			// 	Log.Message(" knownCells.Length: " + knownCells.Length);
-			// 	Log.Message(" compHideFromPlayerGrid.Length: " + compHideFromPlayerGrid.Length);
-			// 	Log.Message(" idxToCellCache.Length: " + idxToCellCache.Length);
-			// 	Log.Message(" idx: " + idx);
-			// 
-			// 	throw ex;
-			// }
+
+				if (initialized) {
+					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
+				}
+
+				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+				int compCount = comps.Count;
+				for (int i = 0; i < compCount; i++) {
+					comps[i].updateVisibility(true);
+				}
+			}
 		}
 
 		public void decrementSeen(Faction faction, int[] factionShownCells, int idx) {
 			if ((--factionShownCells[idx] == 0) && faction.IsPlayer) {
-				IntVec3 cell = idxToCellCache[idx];
 
 				if (initialized) {
-					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
+					mapDrawer.MapMeshDirty(idxToCellCache[idx], SectionLayer_FoVLayer.mapMeshFlag, true, false);
 				}
 
 				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
