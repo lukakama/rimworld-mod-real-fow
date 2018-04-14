@@ -113,7 +113,7 @@
 		</placeWorkers>
 
 		<statBases>
-			<MaxHitPoints>150</MaxHitPoints>
+			<MaxHitPoints>450</MaxHitPoints>
 			<WorkToBuild>4000</WorkToBuild>
 			<Mass>20</Mass>
 			<Flammability>1.0</Flammability>
