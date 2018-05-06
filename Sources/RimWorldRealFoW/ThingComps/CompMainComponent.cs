@@ -26,6 +26,10 @@ namespace RimWorldRealFoW.ThingComps {
 		public CompHideFromPlayer compHideFromPlayer = null;
 		public CompViewBlockerWatcher compViewBlockerWatcher = null;
 
+#if Profile
+		private int ticks = 0;
+#endif
+
 		private void performSetup() {
 			if (!setup) {
 				setup = true;
@@ -95,6 +99,12 @@ namespace RimWorldRealFoW.ThingComps {
 			if (compFieldOfViewWatcher != null) {
 				compFieldOfViewWatcher.CompTick();
 			}
+
+#if Profile
+			if (++ticks >= 5000) {
+				UnityEngine.Application.Quit();
+			}
+#endif
 		}
 
 		public override void CompTickRare() {
