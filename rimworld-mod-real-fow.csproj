@@ -123,6 +123,12 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Languages\English\Keyed\Preferences.xml" />
+    <Content Include="Languages\SpanishLatin\DefInjected\ResearchProjectDef\ResearchProjects_Tier2_Surveillance.xml" />
+    <Content Include="Languages\SpanishLatin\DefInjected\ThingDef\Buildings_Surveillance.xml" />
+    <Content Include="Languages\SpanishLatin\Keyed\Preferences.xml" />
+    <Content Include="Languages\Spanish\DefInjected\ResearchProjectDef\ResearchProjects_Tier2_Surveillance.xml" />
+    <Content Include="Languages\Spanish\DefInjected\ThingDef\Buildings_Surveillance.xml" />
+    <Content Include="Languages\Spanish\Keyed\Preferences.xml" />
     <Content Include="Textures\Things\Buildings\SurveillanceCamera.png" />
     <Content Include="Textures\Things\Buildings\WatchTower.png" />
     <None Include="README.md" />
