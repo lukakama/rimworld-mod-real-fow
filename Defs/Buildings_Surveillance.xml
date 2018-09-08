@@ -10,15 +10,24 @@
 		<description>Surveillance camera that provide vision for an area.</description>
 
 		<category>Building</category>
-		<minifiedDef>MinifiedFurniture</minifiedDef>
+		<minifiedDef>MinifiedThing</minifiedDef>
 		<altitudeLayer>Skyfaller</altitudeLayer>
 		<passability>Standable</passability>
 		<selectable>true</selectable>
+		<fillPercent>0.20</fillPercent>
 		<leaveResourcesWhenKilled>false</leaveResourcesWhenKilled>
-		<soundImpactDefault>BulletImpactMetal</soundImpactDefault>
+		<soundImpactDefault>BulletImpact_Metal</soundImpactDefault>
 		<designationCategory>Security</designationCategory>
 		<rotatable>false</rotatable>
-		<stealable>true</stealable>
+		
+		<terrainAffordanceNeeded>Light</terrainAffordanceNeeded>
+		<constructionSkillPrerequisite>5</constructionSkillPrerequisite>
+
+		<clearBuildingArea>false</clearBuildingArea>
+
+		<thingCategories>
+			<li>BuildingsSecurity</li>
+		</thingCategories>
 
 		<graphicData>
 			<texPath>Things/Buildings/SurveillanceCamera</texPath>
@@ -33,8 +42,8 @@
 		</graphicData>
 
 		<costList>
-			<Steel>50</Steel>
-			<Component>2</Component>
+			<Steel>30</Steel>
+			<ComponentIndustrial>1</ComponentIndustrial>
 		</costList>
 
 		<statBases>
@@ -42,7 +51,7 @@
 			<Beauty>-10</Beauty>
 
 			<MaxHitPoints>50</MaxHitPoints>
-			<WorkToBuild>1000</WorkToBuild>
+			<WorkToBuild>2000</WorkToBuild>
 			<Flammability>1.0</Flammability>
 		</statBases>
 
@@ -51,8 +60,7 @@
 			<li Class="CompProperties_Flickable"/>
 			<li Class="CompProperties_Power">
 				<compClass>CompPowerTrader</compClass>
-				<basePowerConsumption>250</basePowerConsumption>
-				<shortCircuitInRain>false</shortCircuitInRain>
+				<basePowerConsumption>55</basePowerConsumption>
 			</li>
 			<li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_ProvideVision">
 				<viewRadius>12</viewRadius>
@@ -63,7 +71,7 @@
 			<li>SurveillanceCamera</li>
 		</researchPrerequisites>
 	</ThingDef>
-
+	
 	<!-- Watch Tower -->
 	<ThingDef ParentName="BuildingBase">
 		<thingClass>Building</thingClass>
@@ -114,7 +122,7 @@
 
 		<statBases>
 			<MaxHitPoints>450</MaxHitPoints>
-			<WorkToBuild>4000</WorkToBuild>
+			<WorkToBuild>5500</WorkToBuild>
 			<Mass>20</Mass>
 			<Flammability>1.0</Flammability>
 			<Beauty>-60</Beauty>
@@ -122,7 +130,7 @@
 
 		<comps>
 			<li Class="RimWorldRealFoW.ThingComps.Properties.CompProperties_AffectVision">
-				<fovMultiplier>1.5</fovMultiplier>
+				<fovMultiplier>1.75</fovMultiplier>
 			</li>
 		</comps>
 	</ThingDef>

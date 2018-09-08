@@ -220,7 +220,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 						int sightRange;
 						bool isPeeking = false;
-						if (raceProps != null && raceProps.Animal && (pawn.playerSettings == null || pawn.playerSettings.master == null || pawn.training == null || !pawn.training.IsCompleted(TrainableDefOf.Release))) {
+						if (raceProps != null && raceProps.Animal && (pawn.playerSettings == null || pawn.playerSettings.Master == null || pawn.training == null || !pawn.training.HasLearned(TrainableDefOf.Release))) {
 							// If animal, only those with a master set and release training can contribute to the faction FoW.
 							sightRange = -1;
 						} else {
@@ -228,7 +228,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 							if ((pawnPather == null || !pawnPather.Moving) && pawn.CurJob != null) {
 								JobDef jobDef = pawn.CurJob.def;
-								if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
+								if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.Wait_Combat || jobDef == JobDefOf.Hunt) {
 									isPeeking = true;
 								}
 							}
@@ -382,7 +382,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 						if (mannedTurret != null) {
 							attackVerb = mannedTurret.AttackVerb;
 						}
-					} else if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.WaitCombat || jobDef == JobDefOf.Hunt) {
+					} else if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.Wait_Combat || jobDef == JobDefOf.Hunt) {
 						if (pawn.equipment != null) {
 							ThingWithComps primary = pawn.equipment.Primary;
 							if (primary != null && primary.def.IsRangedWeapon) {
@@ -392,7 +392,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 					}
 				}
 
-				if (attackVerb != null && attackVerb.verbProps.range > baseViewRange && attackVerb.verbProps.requireLineOfSight && attackVerb.ownerEquipment.def.IsRangedWeapon) {
+				if (attackVerb != null && attackVerb.verbProps.range > baseViewRange && attackVerb.verbProps.requireLineOfSight && attackVerb.EquipmentSource.def.IsRangedWeapon) {
 					float attackVerbRange = attackVerb.verbProps.range;
 					if (baseViewRange < attackVerbRange) {
 						int ticksStanding = Find.TickManager.TicksGame - lastMovementTick;

@@ -28,12 +28,12 @@ namespace RimWorldRealFoW.Detours {
 				return true;
 			}
 			IntVec3 c = UI.MouseCell();
-			if (!c.InBounds(Find.VisibleMap)) {
+			if (!c.InBounds(Find.CurrentMap)) {
 				return true;
 			}
 
-			MapComponentSeenFog seenFog = Find.VisibleMap.getMapComponentSeenFog();
-			if (!c.Fogged(Find.VisibleMap) && (seenFog != null && !seenFog.knownCells[Find.VisibleMap.cellIndices.CellToIndex(c)])) {
+			MapComponentSeenFog seenFog = Find.CurrentMap.getMapComponentSeenFog();
+			if (!c.Fogged(Find.CurrentMap) && (seenFog != null && !seenFog.knownCells[Find.CurrentMap.cellIndices.CellToIndex(c)])) {
 				GenUI.DrawTextWinterShadow(new Rect(256f, (float)(UI.screenHeight - 256), -256f, 256f));
 				Text.Font = GameFont.Small;
 				GUI.color = new Color(1f, 1f, 1f, 0.8f);

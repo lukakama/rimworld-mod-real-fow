@@ -3,11 +3,12 @@ using Verse;
 
 namespace RimWorldRealFoW.Detours {
 	public static class _LetterStack {
-		public static void ReceiveLetter_Prefix(ref GlobalTargetInfo lookTarget) {
-			if (lookTarget.HasThing) {
-				Thing thing = lookTarget.Thing;
+		public static void ReceiveLetter_Prefix(ref LookTargets lookTargets) {
+			// TODO: Handle multiple targets...
+			if (lookTargets.PrimaryTarget.HasThing) {
+				Thing thing = lookTargets.PrimaryTarget.Thing;
 				if (thing.Faction == null || !thing.Faction.IsPlayer) {
-					lookTarget = new GlobalTargetInfo(thing.Position, thing.Map);
+					lookTargets = new GlobalTargetInfo(thing.Position, thing.Map);
 				}
 			}
 		}

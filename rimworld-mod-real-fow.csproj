@@ -66,6 +66,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_MainTabWindow_Wildlife.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_BeautyUtility.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MoteBubble.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Designator_Place_Postfix.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Designator_Mine.cs" />

@@ -91,9 +91,12 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(Verb), typeof(_Verb), "CanHitCellFromCellIgnoringRange");
 			patchMethod(typeof(Selector), typeof(_Selector), "Select");
 			patchMethod(typeof(MouseoverReadout), typeof(_MouseoverReadout), "MouseoverReadoutOnGUI");
-			
-			patchMethod(typeof(Pawn), typeof(_Pawn), "DrawGUIOverlay");
+			patchMethod(typeof(BeautyUtility), typeof(_BeautyUtility), "FillBeautyRelevantCells");
 
+			patchMethod(typeof(MainTabWindow_Wildlife), typeof(_MainTabWindow_Wildlife), "get_Pawns");
+
+			patchMethod(typeof(Pawn), typeof(_Pawn), "DrawGUIOverlay");
+			
 			patchMethod(typeof(GenMapUI), typeof(_GenMapUI), "DrawThingLabel", typeof(Thing), typeof(string), typeof(Color));
 			patchMethod(typeof(SectionLayer_ThingsGeneral), typeof(_SectionLayer_ThingsGeneral), "TakePrintFrom");
 			patchMethod(typeof(SectionLayer_ThingsPowerGrid), typeof(_SectionLayer_ThingsPowerGrid), "TakePrintFrom");
@@ -101,12 +104,12 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(ReservationUtility), typeof(_ReservationUtility), "CanReserveAndReach");
 			patchMethod(typeof(HaulAIUtility), typeof(_HaulAIUtility), "HaulToStorageJob");
 
-			patchMethod(typeof(HaulAIUtility).Assembly.GetType("Verse.EnvironmentInspectDrawer"), typeof(_EnvironmentInspectDrawer), "ShouldShow");
+			patchMethod(typeof(EnvironmentStatsDrawer), typeof(_EnvironmentStatsDrawer), "ShouldShowWindowNow");
 			
-			patchMethod(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(GlobalTargetInfo), typeof(MessageTypeDef));
-			patchMethod(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(GlobalTargetInfo), typeof(string));
+			patchMethod(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(LookTargets), typeof(MessageTypeDef), typeof(bool));
+			patchMethod(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string));
 
-			patchMethod(typeof(MoteBubble), typeof(_MoteBubble), "Draw");
+			patchMethod(typeof(MoteBubble), typeof(_MoteBubble), "Draw", new Type[] {});
 
 			// Area only designators:
 			patchMethod(typeof(Designator_AreaBuildRoof), typeof(_Designator_Prefix), "CanDesignateCell");
@@ -132,8 +135,8 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateThing");
-			patchMethod(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateCell");
-			patchMethod(typeof(Designator_SmoothFloor), typeof(_Designator_Prefix), "CanDesignateThing");
+			patchMethod(typeof(Designator_SmoothSurface), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_SmoothSurface), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateCell");
@@ -147,9 +150,13 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
 		}
 
+		public static void patchMethod(Type sourceType, Type targetType, string methodName) {
+			patchMethod(sourceType, targetType, methodName, null);
+		}
+
 		public static void patchMethod(Type sourceType, Type targetType, string methodName, params Type[] types) {
 			MethodInfo method = null;
-			if (types.Length != 0) {
+			if (types != null) {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
 			} else {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll);
@@ -157,7 +164,7 @@ namespace RimWorldRealFoW {
 
 			if (method != null) {
 				MethodInfo newMethodPrefix = null;
-				if (types.Length != 0) {
+				if (types != null) {
 					newMethodPrefix = targetType.GetMethod(methodName + "_Prefix", GenGeneric.BindingFlagsAll, null, types, null);
 					if (newMethodPrefix == null) {
 						newMethodPrefix = targetType.GetMethod(methodName + "_Prefix", GenGeneric.BindingFlagsAll, null, (new Type[] { sourceType }).Concat(types).ToArray(), null);
@@ -168,7 +175,7 @@ namespace RimWorldRealFoW {
 				}
 
 				MethodInfo newMethodPostfix = null;
-				if (types.Length != 0) {
+				if (types != null) {
 					newMethodPostfix = targetType.GetMethod(methodName + "_Postfix", GenGeneric.BindingFlagsAll, null, types, null);
 					if (newMethodPostfix == null) {
 						newMethodPostfix = targetType.GetMethod(methodName + "_Postfix", GenGeneric.BindingFlagsAll, null, (new Type[] { sourceType }).Concat(types).ToArray(), null);

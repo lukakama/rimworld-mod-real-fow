@@ -7,7 +7,7 @@
     <defName>SurveillanceCamera</defName>
     <label>surveillance camera</label>
     <description>Allows the production of surveillance cameras.</description>
-    <baseCost>800</baseCost>
+    <baseCost>1200</baseCost>
     <techLevel>Industrial</techLevel>
     <requiredResearchBuilding>HiTechResearchBench</requiredResearchBuilding>
     <prerequisites>
