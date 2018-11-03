@@ -13,13 +13,9 @@
 //   limitations under the License.
 using Harmony;
 using RimWorld;
-using RimWorld.Planet;
 using RimWorldRealFoW.Detours;
-using RimWorldRealFoW.SectionLayers;
 using RimWorldRealFoW.ThingComps;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 #if Profile
@@ -28,7 +24,6 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using Verse;
 using Verse.AI;
-using static RimWorldRealFoW.RealFoWModSettings;
 
 namespace RimWorldRealFoW {
 	[StaticConstructorOnStartup]
@@ -148,6 +143,11 @@ namespace RimWorldRealFoW {
 			
 			// Specific designatos:
 			patchMethod(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
+
+			// Debug Profiling
+#if InternalProfile
+			patchMethod(typeof(EditWindow_DebugInspector), typeof(_EditWindow_DebugInspector), "CurrentDebugString");
+#endif
 		}
 
 		public static void patchMethod(Type sourceType, Type targetType, string methodName) {

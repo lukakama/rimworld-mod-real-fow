@@ -2,8 +2,8 @@
 // Source: https://blogs.msdn.microsoft.com/ericlippert/tag/shadowcasting/
 
 using RimWorld;
+using RimWorldRealFoW.Utils;
 using System;
-using Verse;
 
 namespace RimWorldRealFoW.ShadowCasters {
 	// Octants
@@ -33,6 +33,9 @@ namespace RimWorldRealFoW.ShadowCasters {
 				int targetX = -1,
 				int targetY = -1) {
 
+#if InternalProfile
+			ProfilingUtils.startProfiling("computeFieldOfViewWithShadowCasting");
+#endif
 			int r_r_4 = 4 * radius * radius;
 
 			if (specificOctant == 255) {
@@ -86,6 +89,10 @@ namespace RimWorldRealFoW.ShadowCasters {
 					targetY,
 					0, 1, 1, 1, 0);
 			}
+
+#if InternalProfile
+			ProfilingUtils.stopProfiling("computeFieldOfViewWithShadowCasting");
+#endif
 		}
 
 		private static void computeFieldOfViewInOctantZero(
@@ -138,6 +145,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 
 			int worldY = 0;
 			int worldX = 0;
+			int worldIdx = 0;
 
 			bool firstIteration = true;
 
@@ -228,8 +236,10 @@ namespace RimWorldRealFoW.ShadowCasters {
 							worldY = startY + y;
 						}
 
+						worldIdx = (worldY * maxX) + worldX;
+						
 						// Is the lower-left corner of cell (x,y) within the radius?
-						inRadius = (x2 - 1) * (x2 - 1) + (y2 - 1) * (y2 - 1) <= r_r_4;
+						inRadius = x * x + y * y <= radius * radius;
 
 						if (inRadius && worldX >= 0 && worldY >= 0 && worldX < maxX && worldY < maxY) {
 							if (targetX == -1) {
@@ -238,12 +248,12 @@ namespace RimWorldRealFoW.ShadowCasters {
 									fovGrid[fogGridIdx] = true;
 									if (handleSeenAndCache) {
 										if (oldFovGrid == null || worldX < oldFovGridMinX || worldY < oldFovGridMinY || worldX > oldFovGridMaxX || worldY > oldFovGridMaxY) {
-											mapCompSeenFog.incrementSeen(faction, factionShownCells, (worldY * maxX) + worldX);
+											mapCompSeenFog.incrementSeen(faction, factionShownCells, worldIdx);
 										} else {
 											oldFogGridIdx = ((worldY - oldFovGridMinY) * oldFovGridWidth) + (worldX - oldFovGridMinX);
 											if (!oldFovGrid[oldFogGridIdx]) {
 												// Old cell was not visible. Increment seen counter in global grid.
-												mapCompSeenFog.incrementSeen(faction, factionShownCells, (worldY * maxX) + worldX);
+												mapCompSeenFog.incrementSeen(faction, factionShownCells, worldIdx);
 											} else {
 												// Old cell was already visible. Mark it to not be unseen.
 												oldFovGrid[oldFogGridIdx] = false;
@@ -264,7 +274,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 						// in the next column, so we might as well treat it as 
 						// an opaque cell and not scan the cells that are also too
 						// far away in the next column.
-						currentIsOpaque = !inRadius || worldX < 0 || worldY < 0 || worldX >= maxX || worldY >= maxY || viewBlockerCells[(worldY * maxX) + worldX];
+						currentIsOpaque = !inRadius || worldX < 0 || worldY < 0 || worldX >= maxX || worldY >= maxY || viewBlockerCells[worldIdx];
 
 						if (lastCellCalcuated) {
 							if (currentIsOpaque) {
@@ -279,6 +289,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 									columnPortion.topVectorY = topVectorY;
 									columnPortion.bottomVectorX = x2 - 1;
 									columnPortion.bottomVectorY = y2 + 1;
+
 								}
 							} else if (wasLastCellOpaque) {
 								// We've found a boundary from opaque to transparent. Adjust the

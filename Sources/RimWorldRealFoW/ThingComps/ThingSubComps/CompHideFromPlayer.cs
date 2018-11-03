@@ -76,8 +76,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			base.CompTick();
 
 			// Check 5 times per seconds for position and rotation change (nothing should be so fast, but rotation has no cap).
-			int currentTick = Find.TickManager.TicksGame;
-			if ((currentTick % 12) == 0) {
+			if ((Find.TickManager.TicksGame % 12) == 0) {
 				updateVisibility(false);
 			}
 		}
@@ -92,6 +91,10 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			if (!setupDone || Current.ProgramState == ProgramState.MapInitializing) {
 				return;
 			}
+
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompHideFromPlayer.updateVisibility");
+#endif
 
 			Thing thing = base.parent;
 			IntVec3 newPosition = thing.Position;
@@ -132,13 +135,16 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 								seenByPlayer = true;
 								compHiddenable.show();
 							}
-						} else if ((forceUpdate || !seenByPlayer) && thing.fowInKnownCell()) {
+						} else if ((forceUpdate || !seenByPlayer) && hasPartShownToPlayer()) {
 							seenByPlayer = true;
 							compHiddenable.show();
 						}
 					}
 				}
 			}
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompHideFromPlayer.updateVisibility");
+#endif
 		}
 
 		private bool hasPartShownToPlayer() {

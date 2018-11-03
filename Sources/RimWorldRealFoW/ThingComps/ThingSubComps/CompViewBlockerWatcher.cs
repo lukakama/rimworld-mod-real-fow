@@ -71,6 +71,9 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 		}
 
 		private void updateViewBlockerCells(bool blockView) {
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompViewBlockerWatcher.updateViewBlockerCells");
+#endif
 			bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
 
 			int mapSizeZ = map.Size.z;
@@ -85,23 +88,35 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				}
 			}
 
+			IntVec3 thisPos = parent.Position;
 			if (Current.ProgramState == ProgramState.Playing) {
 				if (map != null) {
-					List<Thing> things = map.listerThings.AllThings;
-					for (int i = 0; i < things.Count; i++) {
-						ThingWithComps thing = things[i] as ThingWithComps;
-						if (thing != null) {
-							CompMainComponent compMain = (CompMainComponent)thing.TryGetComp(CompMainComponent.COMP_DEF);
-							if (compMain != null) {
-								CompFieldOfViewWatcher cmpFov = compMain.compFieldOfViewWatcher;
-								if (cmpFov != null && parent.Position.InHorDistOf(thing.Position, cmpFov.sightRange)) {
-									cmpFov.updateFoV(true);
+					List<CompFieldOfViewWatcher> cmpFovs = mapCompSeenFog.fowWatchers;
+					for (int i = 0; i < cmpFovs.Count; i++) {
+						CompFieldOfViewWatcher cmpFov = cmpFovs[i];
+						int thingSightRange = cmpFov.lastSightRange;
+
+						if (thingSightRange > 0) {
+							IntVec3 thingPos = cmpFov.parent.Position;
+
+							int x = thisPos.x - thingPos.x;
+							int z = thisPos.z - thingPos.z;
+
+							if (x * x + z * z <= thingSightRange * thingSightRange) {
+								try {
+								cmpFov.refreshFovTarget(ref thisPos);
+								} catch (System.Exception ex) {
+									Log.Error("Error updating " + cmpFov.parent + " for " + parent + ". " + ex);
 								}
 							}
 						}
 					}
 				}
 			}
+
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompViewBlockerWatcher.updateViewBlockerCells");
+#endif
 		}
 	}
 }

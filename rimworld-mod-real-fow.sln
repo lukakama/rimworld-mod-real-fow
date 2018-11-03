@@ -1,19 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rimworld-mod-real-fow", "rimworld-mod-real-fow.csproj", "{9E008B68-2B98-4AC2-9C65-832D13F94746}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		InternalProfile|Any CPU = InternalProfile|Any CPU
 		Profile|Any CPU = Profile|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{9E008B68-2B98-4AC2-9C65-832D13F94746}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9E008B68-2B98-4AC2-9C65-832D13F94746}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E008B68-2B98-4AC2-9C65-832D13F94746}.InternalProfile|Any CPU.ActiveCfg = InternalProfile|Any CPU
+		{9E008B68-2B98-4AC2-9C65-832D13F94746}.InternalProfile|Any CPU.Build.0 = InternalProfile|Any CPU
 		{9E008B68-2B98-4AC2-9C65-832D13F94746}.Profile|Any CPU.ActiveCfg = Profile|Any CPU
 		{9E008B68-2B98-4AC2-9C65-832D13F94746}.Profile|Any CPU.Build.0 = Profile|Any CPU
 		{9E008B68-2B98-4AC2-9C65-832D13F94746}.Release|Any CPU.ActiveCfg = Release|Any CPU

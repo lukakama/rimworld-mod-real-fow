@@ -46,7 +46,9 @@ namespace RimWorldRealFoW {
 		private ThingGrid thingGrid;
 
 		public bool initialized = false;
-		
+
+		public List<CompFieldOfViewWatcher> fowWatchers;
+
 		public MapComponentSeenFog(Map map) : base(map) {
 			mapCellLength = map.cellIndices.NumGridCells;
 			mapSizeX = map.Size.x;
@@ -55,6 +57,8 @@ namespace RimWorldRealFoW {
 			fogGrid = map.fogGrid;
 			thingGrid = map.thingGrid;
 			mapDrawer = map.mapDrawer;
+
+			fowWatchers = new List<CompFieldOfViewWatcher>(1000);
 
 			designationManager = this.map.designationManager;
 
@@ -78,14 +82,23 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public override void MapComponentUpdate() {
+		public override void MapComponentTick() {
+#if InternalProfile
+			ProfilingUtils.startProfiling("0-calibration");
+			ProfilingUtils.stopProfiling("0-calibration");
+
+			ProfilingUtils.recordPrevProfiling("MapComponentSeenFog.MapComponentTick");
+
+			ProfilingUtils.startProfiling("MapComponentSeenFog.MapComponentTick");
+#endif
+
 			if (!initialized) {
 				initialized = true;
 
 				init();
 			}
 		}
-		
+
 		public int[] getFactionShownCells(Faction faction) {
 			if (faction == null) {
 				return null;
@@ -215,7 +228,7 @@ namespace RimWorldRealFoW {
 		}
 
 		public void incrementSeen(Faction faction, int[] factionShownCells, int idx) {
-			if ((++factionShownCells[idx] == 1) && faction.IsPlayer) {
+			if ((++factionShownCells[idx] == 1) && faction.def.isPlayer) {
 				IntVec3 cell = idxToCellCache[idx];
 
 				knownCells[idx] = true;
@@ -226,7 +239,7 @@ namespace RimWorldRealFoW {
 				}
 
 				if (initialized) {
-					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
+					setMapMeshDirtyFlag(idx);
 				}
 
 				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
@@ -238,10 +251,9 @@ namespace RimWorldRealFoW {
 		}
 
 		public void decrementSeen(Faction faction, int[] factionShownCells, int idx) {
-			if ((--factionShownCells[idx] == 0) && faction.IsPlayer) {
-
+			if ((--factionShownCells[idx] == 0) && faction.def.isPlayer) {
 				if (initialized) {
-					mapDrawer.MapMeshDirty(idxToCellCache[idx], SectionLayer_FoVLayer.mapMeshFlag, true, false);
+					setMapMeshDirtyFlag(idx);
 				}
 
 				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
@@ -251,5 +263,55 @@ namespace RimWorldRealFoW {
 				}
 			}
 		}
+
+		private void setMapMeshDirtyFlag(int idx) {
+			ref IntVec3 cell = ref idxToCellCache[idx];
+
+			// Update cell section.
+			mapDrawer.SectionAt(cell).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+
+			int sectionX = cell.x % 17;
+			int sectionZ = cell.z % 17;
+
+			// Update neighbours sections if needed.
+			if (sectionX == 0) {
+				if (cell.x != 0) {
+					mapDrawer.SectionAt(cell + IntVec3.West).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+					if (sectionZ == 0) {
+						if (cell.z != 0) {
+							mapDrawer.SectionAt(cell + IntVec3.SouthWest).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+						}
+					} else if (sectionZ == 16) {
+						if (cell.z < mapSizeZ) {
+							mapDrawer.SectionAt(cell + IntVec3.NorthWest).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+						}
+					}
+				}
+			} else if (sectionX == 16) {
+				if (cell.x < mapSizeX) {
+					mapDrawer.SectionAt(cell + IntVec3.East).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+					if (sectionZ == 0) {
+						if (cell.z != 0) {
+							mapDrawer.SectionAt(cell + IntVec3.SouthEast).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+						}
+					} else if (sectionZ == 16) {
+						if (cell.z < mapSizeZ) {
+							mapDrawer.SectionAt(cell + IntVec3.NorthEast).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+						}
+					}
+				}
+			}
+
+			if (sectionZ == 0) {
+				if (cell.z != 0) {
+					mapDrawer.SectionAt(cell + IntVec3.South).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+				}
+			} else if (sectionZ == 16) {
+				if (cell.z < mapSizeZ) {
+					mapDrawer.SectionAt(cell + IntVec3.North).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+				}
+			}
+		}
+
 	}
 }

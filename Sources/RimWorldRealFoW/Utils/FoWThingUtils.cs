@@ -18,23 +18,43 @@ namespace RimWorldRealFoW.Utils {
 			return true;
 		}
 
-		public static bool fowInKnownCell(this Thing _this) {
-			MapComponentSeenFog mapComponent = _this.Map.getMapComponentSeenFog();
-			if (mapComponent != null) {
-				Faction playerFaction = Faction.OfPlayer;
-				Map map = _this.Map;
-				CellIndices cellIndices = map.cellIndices;
+		private static bool fowInKnownCell(this Thing _this) {
+#if InternalProfile
+			ProfilingUtils.startProfiling("FoWThingUtils.fowInKnownCell");
+#endif
+			try {
+				MapComponentSeenFog mapComponent = _this.Map.getMapComponentSeenFog();
+				if (mapComponent != null) {
+					Faction playerFaction = Faction.OfPlayer;
+					Map map = _this.Map;
 
-				foreach (IntVec3 cell in _this.OccupiedRect().Cells) {
-					if (cell.InBounds(map) && mapComponent.knownCells[cellIndices.CellToIndex(cell)]) {
-						return true;
+					IntVec3 position = _this.Position;
+
+					IntVec2 size = _this.def.size;
+
+					if (size.x == 1 && size.z == 1) {
+						return mapComponent.isShown(playerFaction, position);
+					} else {
+						CellRect occupiedRect = GenAdj.OccupiedRect(position, _this.Rotation, size);
+
+						for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
+							for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
+								if (mapComponent.isShown(playerFaction, x, z)) {
+									return true;
+								}
+							}
+						}
 					}
+
+					return false;
 				}
 
-				return false;
+				return true;
+			} finally {
+#if InternalProfile
+				ProfilingUtils.stopProfiling("FoWThingUtils.fowInKnownCell");
+#endif
 			}
-
-			return true;
 		}
 
 		public static ThingComp TryGetComp(this Thing _this, CompProperties def) {

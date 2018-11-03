@@ -12,6 +12,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 using RimWorldRealFoW.ThingComps.ThingSubComps;
+using UnityEngine;
 using Verse;
 
 namespace RimWorldRealFoW.ThingComps {
@@ -64,27 +65,23 @@ namespace RimWorldRealFoW.ThingComps {
 		}
 
 		public override void PostSpawnSetup(bool respawningAfterLoad) {
-			base.PostSpawnSetup(respawningAfterLoad);
-
 			if (!setup) {
 				performSetup();
 			}
 
-			compComponentsPositionTracker.PostSpawnSetup(false);
-			compHiddenable.PostSpawnSetup(false);
-			compHideFromPlayer.PostSpawnSetup(false);
+			compComponentsPositionTracker.PostSpawnSetup(respawningAfterLoad);
+			compHiddenable.PostSpawnSetup(respawningAfterLoad);
+			compHideFromPlayer.PostSpawnSetup(respawningAfterLoad);
 
 			if (compViewBlockerWatcher != null) {
-				compViewBlockerWatcher.PostSpawnSetup(false);
+				compViewBlockerWatcher.PostSpawnSetup(respawningAfterLoad);
 			}
 			if (compFieldOfViewWatcher != null) {
-				compFieldOfViewWatcher.PostSpawnSetup(false);
+				compFieldOfViewWatcher.PostSpawnSetup(respawningAfterLoad);
 			}
 		}
 
 		public override void CompTick() {
-			base.CompTick();
-
 			if (!setup) {
 				performSetup();
 			}
@@ -108,8 +105,6 @@ namespace RimWorldRealFoW.ThingComps {
 		}
 
 		public override void CompTickRare() {
-			base.CompTickRare();
-
 			if (!setup) {
 				performSetup();
 			}
@@ -126,9 +121,8 @@ namespace RimWorldRealFoW.ThingComps {
 			}
 		}
 
-		public override void ReceiveCompSignal(string signal) {
-			base.ReceiveCompSignal(signal);
 
+		public override void ReceiveCompSignal(string signal) {
 			if (!setup) {
 				performSetup();
 			}
@@ -146,8 +140,6 @@ namespace RimWorldRealFoW.ThingComps {
 		}
 
 		public override void PostDeSpawn(Map map) {
-			base.PostDeSpawn(map);
-
 			if (!setup) {
 				performSetup();
 			}
@@ -165,8 +157,6 @@ namespace RimWorldRealFoW.ThingComps {
 		}
 
 		public override void PostExposeData() {
-			base.PostExposeData();
-			
 			if (!setup) {
 				performSetup();
 			}

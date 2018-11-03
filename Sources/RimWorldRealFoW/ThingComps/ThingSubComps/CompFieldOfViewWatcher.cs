@@ -30,7 +30,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 		private bool calculated;
 		private IntVec3 lastPosition;
-		private int lastSightRange;
+		public int lastSightRange;
 
 		private bool lastIsPeeking;
 		private Faction lastFaction;
@@ -46,7 +46,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 		private bool viewMapSwitch = false;
 
 		private IntVec3[] viewPositions;
-
+		
 		private Map map;
 		private MapComponentSeenFog mapCompSeenFog;
 		private ThingGrid thingGrid;
@@ -83,20 +83,13 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 		private bool disabled;
 
-		public int sightRange {
-			get {
-				return lastSightRange;
-			}
-		}
 
 		public override void PostSpawnSetup(bool respawningAfterLoad) {
-			base.PostSpawnSetup(respawningAfterLoad);
-
 			setupDone = true;
 
 			calculated = false;
 			lastPosition = iv3Invalid;
-			lastSightRange = -9999;
+			lastSightRange = 0;
 			lastIsPeeking = false;
 
 			viewMap1 = null;
@@ -122,9 +115,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				raceProps = pawn.RaceProps;
 				hediffs = pawn.health.hediffSet.hediffs;
 				capacities = pawn.health.capacities;
+				pawnPather = pawn.pather;
 			}
-
-			initMap();
 
 			def = parent.def;
 			if (def.race != null) {
@@ -139,7 +131,16 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				baseViewRange = MECH_DEFAULT_RANGE;
 			}
 
-			disabled = false;
+			if ((pawn == null) && !(turret != null && compMannable == null) && (compProvideVision == null) && (building == null)) {
+				// Disable the component and remove from the main one (this thing doesn't need the FoV calculation).
+				Log.Message("Removing unneeded FoV watcher from " + parent.ThingID);
+				disabled = true;
+				mainComponent.compFieldOfViewWatcher = null;
+			} else {
+				disabled = false;
+			}
+
+			initMap();
 
 			lastMovementTick = Find.TickManager.TicksGame;
 			lastPositionUpdateTick = lastMovementTick;
@@ -147,44 +148,57 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 		}
 
 		public override void PostExposeData() {
-			base.PostExposeData();
-
 			Scribe_Values.Look<int>(ref this.lastMovementTick, "fovLastMovementTick", Find.TickManager.TicksGame, false);
 			// Scribe_Values.Look<bool>(ref this.disabled, "fovDisabled", false, false);
 		}
 
 		public override void ReceiveCompSignal(string signal) {
-			base.ReceiveCompSignal(signal);
-
 			updateFoV();
 		}
 
 		public override void CompTick() {
-			base.CompTick();
-
-			if (pawn != null && pawnPather == null) {
-				pawnPather = pawn.pather;
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.tick");
+#endif
+			if (disabled) {
+				return;
 			}
-			
+
 			int currentTick = Find.TickManager.TicksGame;
 
-			if (parent != null && parent.Spawned && pawn != null && pawnPather != null && pawnPather.Moving) {
-				lastMovementTick = currentTick;
+			if (pawn != null) {
+				// Update at every position change and then after every 1/2 second from last position change.
+				if (pawnPather == null) {
+					pawnPather = pawn.pather;
+				}
+				if (pawnPather != null && pawnPather.Moving) {
+					lastMovementTick = currentTick;
+				}
+
+				if (lastPosition != iv3Invalid && lastPosition != parent.Position) {
+					lastPositionUpdateTick = currentTick;
+					updateFoV();
+				} else if ((currentTick - lastPositionUpdateTick) % 30 == 0) {
+					updateFoV();
+				}
+
+			// Non pawns update at most every 30 ticks or when position change.
+			} else if ((lastPosition != iv3Invalid && lastPosition != parent.Position) || currentTick % 30 == 0) {
+				updateFoV();
 			}
 
-			// Update at every position change and then after every 1/2 second from last position change.
-			if (lastPosition != iv3Invalid && lastPosition != parent.Position) {
-				lastPositionUpdateTick = currentTick;
-				updateFoV();
-			} else if ((currentTick - lastPositionUpdateTick) % 30 == 0) {
-				updateFoV();
-			}
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.tick");
+#endif
 		}
 
 		private void initMap() {
 			if (map != parent.Map) {
 				if (map != null && lastFaction != null) {
 					unseeSeenCells(lastFaction, lastFactionShownCells);
+				}
+				if (!disabled && mapCompSeenFog != null) {
+					mapCompSeenFog.fowWatchers.Remove(this);
 				}
 				map = parent.Map;
 				mapCompSeenFog = map.getMapComponentSeenFog();
@@ -193,6 +207,10 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				roofGrid = map.roofGrid;
 				weatherManager = map.weatherManager;
 				lastFactionShownCells = mapCompSeenFog.getFactionShownCells(parent.Faction);
+
+				if (!disabled) {
+					mapCompSeenFog.fowWatchers.Add(this);
+				}
 
 				mapSizeX = map.Size.x;
 				mapSizeZ = map.Size.z;
@@ -204,6 +222,9 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				return;
 			}
 
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.updateFoV");
+#endif
 			ThingWithComps thing = base.parent;
 			IntVec3 newPosition = thing.Position;
 
@@ -347,8 +368,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							revealOccupiedCells();
 						}
 					} else {
-						// Disable the component (this thing doesn't need the FoV calculation).
-						disabled = true;
+						Log.Warning("Non disabled thing... " + parent.ThingID);
 					}
 				} else if (newFaction != lastFaction) {
 					// Faction change (from a faction to nothing). Unseen and clear old seen cells
@@ -359,6 +379,10 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 					lastFactionShownCells = mapCompSeenFog.getFactionShownCells(newFaction);
 				}
 			}
+
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.updateFoV");
+#endif
 		}
 
 		public float calcPawnSightRange(IntVec3 position, bool forTargeting, bool shouldMove) {
@@ -367,6 +391,9 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				return 0;
 			}
 
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.calcPawnSightRange");
+#endif
 			float sightRange = 0f;
 
 			initMap();
@@ -466,12 +493,19 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			if (sightRange < 1f) {
 				return 1;
 			}
-			
+
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.calcPawnSightRange");
+#endif
 			return sightRange;
 		}
 
 		public override void PostDeSpawn(Map map) {
 			base.PostDeSpawn(map);
+
+			if (!disabled && mapCompSeenFog != null) {
+				mapCompSeenFog.fowWatchers.Remove(this);
+			}
 
 			if (lastFaction != null) {
 				unseeSeenCells(lastFaction, lastFactionShownCells);
@@ -479,6 +513,14 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 		}
 
 		public void calculateFoV(Thing thing, int intRadius, bool peek) {
+			if (!setupDone) {
+				return;
+			}
+
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.calculateFoV");
+#endif
+
 			int mapSizeX = this.mapSizeX;
 			int mapSizeZ = this.mapSizeZ;
 
@@ -575,7 +617,9 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 					}
 				}
 			}
-
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.calculateFoV-unsee");
+#endif
 			// Mark old cells not present anymore in the updated FoV.
 			int oldX;
 			int oldZ;
@@ -602,6 +646,215 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			viewRect.minX = newViewRectMinX;
 			viewRect.maxZ = newViewRectMaxZ;
 			viewRect.minZ = newViewRectMinZ;
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.calculateFoV-unsee");
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.calculateFoV");
+#endif
+		}
+
+		public void refreshFovTarget(ref IntVec3 targetPos) {
+			if (!setupDone) {
+				return;
+			}
+
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.refreshFovTarget");
+#endif
+			Thing thing = parent;
+
+			bool[] oldViewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
+			bool[] newViewMap = viewMapSwitch ? this.viewMap2 : this.viewMap1;
+
+			if (oldViewMap == null || lastPosition != parent.Position) {
+				// View never calculated or position changed: perform full calculation.
+				updateFoV(true);
+
+			} else {
+				int intRadius = lastSightRange;
+				bool peek = lastIsPeeking;
+
+				int mapSizeX = this.mapSizeX;
+				int mapSizeZ = this.mapSizeZ;
+
+				IntVec3 position = thing.Position;
+				Faction faction = lastFaction;
+				int[] factionShownCells = lastFactionShownCells;
+
+				CellRect occupiedRect = thing.OccupiedRect();
+
+				// New view rect is equal to the previous.
+				int viewRectMinZ = viewRect.minZ;
+				int viewRectMaxZ = viewRect.maxZ;
+				int viewRectMinX = viewRect.minX;
+				int viewRectMaxX = viewRect.maxX;
+
+				int viewWidth = viewRect.Width;
+				int viewArea = viewRect.Area;
+
+				// Create the new view map if needed.
+				if (newViewMap == null || newViewMap.Length < viewArea) {
+					newViewMap = new bool[(int)(viewArea * 1.20f)];
+					if (viewMapSwitch) {
+						this.viewMap2 = newViewMap;
+					} else {
+						this.viewMap1 = newViewMap;
+					}
+				}
+
+				// Set occupied cells (that should be already visible...) and cleaning old view map.
+				int occupiedX;
+				int occupiedZ;
+				int viewRectIdx;
+				for (occupiedX = occupiedRect.minX; occupiedX <= occupiedRect.maxX; occupiedX++) {
+					for (occupiedZ = occupiedRect.minZ; occupiedZ <= occupiedRect.maxZ; occupiedZ++) {
+						viewRectIdx = ((occupiedZ - viewRectMinZ) * viewWidth) + (occupiedX - viewRectMinX);
+
+						newViewMap[viewRectIdx] = true;
+						oldViewMap[viewRectIdx] = false;
+					}
+				}
+
+				bool[] viewBlockerCells = mapCompSeenFog.viewBlockerCells;
+
+				int viewPositionsCount;
+				viewPositions[0] = position;
+
+				if (!peek) {
+					viewPositionsCount = 1;
+				} else {
+					viewPositionsCount = 5;
+					for (int i = 0; i < 4; i++) {
+						viewPositions[1 + i] = position + GenAdj.CardinalDirections[i];
+					}
+				}
+				int mapWitdh = map.Size.x - 1;
+				int mapHeight = map.Size.z - 1;
+
+				// Calculate FOV of the affected quadrant for view positions.
+				bool q1updated = false;
+				bool q2updated = false;
+				bool q3updated = false;
+				bool q4updated = false;
+				for (int viewPosIdx = 0; viewPosIdx < viewPositionsCount; viewPosIdx++) {
+					ref IntVec3 viewPosition = ref viewPositions[viewPosIdx];
+					if (viewPosition.x >= 0 && viewPosition.z >= 0 && viewPosition.x <= mapWitdh && viewPosition.z <= mapHeight &&
+								(viewPosIdx == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[(viewPosition.z * mapSizeX) + viewPosition.x])) {
+						if (viewPosition.x <= targetPos.x) {
+							if (viewPosition.z <= targetPos.z) {
+								q1updated = true;
+							} else {
+								q4updated = true;
+							}
+						} else {
+							if (viewPosition.z <= targetPos.z) {
+								q2updated = true;
+							} else {
+								q3updated = true;
+							}
+						}
+					}
+				}
+
+				for (int viewPosIdx = 0; viewPosIdx < viewPositionsCount; viewPosIdx++) {
+					ref IntVec3 viewPosition = ref viewPositions[viewPosIdx];
+					if (viewPosition.x >= 0 && viewPosition.z >= 0 && viewPosition.x <= mapWitdh && viewPosition.z <= mapHeight &&
+								(viewPosIdx == 0 || viewPosition.IsInside(thing) || !viewBlockerCells[(viewPosition.z * mapSizeX) + viewPosition.x])) {
+						if (q1updated) {
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 0);
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 1);
+						}
+						if (q2updated) {
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 2);
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 3);
+						}
+						if (q3updated) {
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 4);
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 5);
+						}
+						if (q4updated) {
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 6);
+							ShadowCaster.computeFieldOfViewWithShadowCasting(viewPosition.x, viewPosition.z, intRadius,
+								viewBlockerCells, mapSizeX, mapSizeZ,
+								true, mapCompSeenFog, faction, factionShownCells,
+								newViewMap, viewRectMinX, viewRectMinZ, viewWidth,
+								oldViewMap, viewRectMinX, viewRectMaxX, viewRectMinZ, viewRectMaxZ, viewWidth, 7);
+						}
+					}
+				}
+
+				// Mark old cells not present anymore in the updated FoV and copy non affected quadrants.
+				int x;
+				int z;
+				byte quadrant;
+				for (int i = 0; i < viewArea; i++) {
+					ref bool oldViewMapVisible = ref oldViewMap[i];
+					if (oldViewMapVisible) {
+						oldViewMapVisible = false;
+
+						x = viewRectMinX + (i % viewWidth);
+						z = viewRectMinZ + (i / viewWidth);
+
+						if (position.x <= x) {
+							if (position.z <= z) {
+								quadrant = 1;
+							} else {
+								quadrant = 4;
+							}
+						} else {
+							if (position.z <= z) {
+								quadrant = 2;
+							} else {
+								quadrant = 3;
+							}
+						}
+
+						// Copy non affected quadrants.
+						if ((!q1updated && quadrant == 1) ||
+								(!q2updated && quadrant == 2) ||
+								(!q3updated && quadrant == 3) ||
+								(!q4updated && quadrant == 4)) {
+							newViewMap[i] = true;
+						} else if (z >= 0 && z <= mapSizeZ && x >= 0 && x <= mapSizeX) {
+							mapCompSeenFog.decrementSeen(faction, factionShownCells, (z * mapSizeX) + x);
+						}
+					}
+				}
+
+				// Use te new view area.
+				viewMapSwitch = !viewMapSwitch;
+			}
+
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.refreshFovTarget");
+#endif
 		}
 
 		private void unseeSeenCells(Faction faction, int[] factionShownCells) {
