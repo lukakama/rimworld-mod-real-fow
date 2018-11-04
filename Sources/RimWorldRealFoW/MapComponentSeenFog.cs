@@ -37,8 +37,8 @@ namespace RimWorldRealFoW {
 		private int maxFactionLoadId;
 
 		private int mapCellLength;
-		private int mapSizeX;
-		private int mapSizeZ;
+		public int mapSizeX;
+		public int mapSizeZ;
 		private FogGrid fogGrid;
 		private DesignationManager designationManager;
 		private MapDrawer mapDrawer;

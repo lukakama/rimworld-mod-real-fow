@@ -21,40 +21,38 @@ namespace RimWorldRealFoW.Utils {
 		private static bool fowInKnownCell(this Thing _this) {
 #if InternalProfile
 			ProfilingUtils.startProfiling("FoWThingUtils.fowInKnownCell");
-#endif
 			try {
-				MapComponentSeenFog mapComponent = _this.Map.getMapComponentSeenFog();
-				if (mapComponent != null) {
-					Faction playerFaction = Faction.OfPlayer;
-					Map map = _this.Map;
+#endif
+			MapComponentSeenFog mapComponent = _this.Map.getMapComponentSeenFog();
+			if (mapComponent != null) {
+				bool[] knownCells = mapComponent.knownCells;
+				int mapSizeX = mapComponent.mapSizeX;
+				IntVec3 position = _this.Position;
 
-					IntVec3 position = _this.Position;
+				IntVec2 size = _this.def.size;
+				if (size.x == 1 && size.z == 1) {
+					return mapComponent.knownCells[(position.z * mapSizeX) + position.x];
+				} else {
+					CellRect occupiedRect = GenAdj.OccupiedRect(position, _this.Rotation, size);
 
-					IntVec2 size = _this.def.size;
-
-					if (size.x == 1 && size.z == 1) {
-						return mapComponent.isShown(playerFaction, position);
-					} else {
-						CellRect occupiedRect = GenAdj.OccupiedRect(position, _this.Rotation, size);
-
-						for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
-							for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
-								if (mapComponent.isShown(playerFaction, x, z)) {
-									return true;
-								}
+					for (int x = occupiedRect.minX; x <= occupiedRect.maxX; x++) {
+						for (int z = occupiedRect.minZ; z <= occupiedRect.maxZ; z++) {
+							if (mapComponent.knownCells[(z * mapSizeX) + x]) {
+								return true;
 							}
 						}
 					}
-
-					return false;
 				}
 
-				return true;
-			} finally {
-#if InternalProfile
-				ProfilingUtils.stopProfiling("FoWThingUtils.fowInKnownCell");
-#endif
+				return false;
 			}
+
+			return true;
+#if InternalProfile
+			} finally {
+				ProfilingUtils.stopProfiling("FoWThingUtils.fowInKnownCell");
+			}
+#endif
 		}
 
 		public static ThingComp TryGetComp(this Thing _this, CompProperties def) {
