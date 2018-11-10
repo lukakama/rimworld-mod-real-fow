@@ -26,7 +26,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 		public static void computeFieldOfViewWithShadowCasting(
 				int startX, int startY, int radius,
 				bool[] viewBlockerCells, int maxX, int maxY,
-				bool handleSeenAndCache, MapComponentSeenFog mapCompSeenFog, Faction faction, int[] factionShownCells,
+				bool handleSeenAndCache, MapComponentSeenFog mapCompSeenFog, Faction faction, short[] factionShownCells,
 				bool[] fovGrid, int fovGridMinX, int fovGridMinY, int fovGridWidth,
 				bool[] oldFovGrid, int oldFovGridMinX, int oldFovGridMaxX, int oldFovGridMinY, int oldFovGridMaxY, int oldFovGridWidth,
 				byte specificOctant = 255,
@@ -36,7 +36,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 #if InternalProfile
 			ProfilingUtils.startProfiling("computeFieldOfViewWithShadowCasting");
 #endif
-			int r_r_4 = 4 * radius * radius;
+			int r_r = radius * radius;
 
 			if (specificOctant == 255) {
 				for (byte octant = 0; octant < 8; ++octant) {
@@ -53,7 +53,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 					oldFovGridMaxY,
 					oldFovGridWidth,
 					radius,
-					r_r_4,
+					r_r,
 					startX,
 					startY,
 					maxX,
@@ -78,7 +78,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 					oldFovGridMaxY,
 					oldFovGridWidth,
 					radius,
-					r_r_4,
+					r_r,
 					startX,
 					startY,
 					maxX,
@@ -108,7 +108,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 				int oldFovGridMaxY,
 				int oldFovGridWidth,
 				int radius,
-				int r_r_4,
+				int r_r,
 				int startX,
 				int startY,
 				int maxX,
@@ -117,7 +117,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 				bool handleSeenAndCache,
 				MapComponentSeenFog mapCompSeenFog,
 				Faction faction,
-				int[] factionShownCells,
+				short[] factionShownCells,
 				int targetX,
 				int targetY,
 				int x,
@@ -141,7 +141,8 @@ namespace RimWorldRealFoW.ShadowCasters {
 			int oldFogGridIdx;
 
 			int x2;
-			int y2;
+
+			int x_x;
 
 			int worldY = 0;
 			int worldX = 0;
@@ -163,6 +164,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 
 				while (x <= radius) {
 					x2 = 2 * x;
+					x_x = x * x;
 
 					// This method has two main purposes: (1) it marks points inside the
 					// portion that are within the radius as in the field of view, and 
@@ -224,8 +226,6 @@ namespace RimWorldRealFoW.ShadowCasters {
 					}
 
 					for (int y = topY; y >= bottomY; --y) {
-						y2 = 2 * y;
-
 						if (octant == 1 || octant == 6) {
 							worldX = startX + y;
 						} else if (octant == 2 || octant == 5) {
@@ -239,7 +239,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 						worldIdx = (worldY * maxX) + worldX;
 						
 						// Is the lower-left corner of cell (x,y) within the radius?
-						inRadius = x * x + y * y <= radius * radius;
+						inRadius = x_x + y * y < r_r;
 
 						if (inRadius && worldX >= 0 && worldY >= 0 && worldX < maxX && worldY < maxY) {
 							if (targetX == -1) {
@@ -288,7 +288,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 									columnPortion.topVectorX = topVectorX;
 									columnPortion.topVectorY = topVectorY;
 									columnPortion.bottomVectorX = x2 - 1;
-									columnPortion.bottomVectorY = y2 + 1;
+									columnPortion.bottomVectorY = (2 * y) + 1;
 
 								}
 							} else if (wasLastCellOpaque) {
@@ -300,7 +300,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 								// opaque cell that is above the transparent cell, which is
 								// the upper right corner of the current transparent cell.
 								topVectorX = x2 + 1;
-								topVectorY = y2 + 1;
+								topVectorY = (2 * y) + 1;
 							}
 						}
 						lastCellCalcuated = true;
@@ -309,7 +309,7 @@ namespace RimWorldRealFoW.ShadowCasters {
 
 					// Make a note of the lowest opaque-->transparent transition, if there is one. 
 					if (lastCellCalcuated && !wasLastCellOpaque) {
-						x += 1;
+						++x;
 					} else {
 						break;
 					}

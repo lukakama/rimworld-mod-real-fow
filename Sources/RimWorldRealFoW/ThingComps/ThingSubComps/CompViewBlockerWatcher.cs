@@ -102,12 +102,8 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							int x = thisPos.x - thingPos.x;
 							int z = thisPos.z - thingPos.z;
 
-							if (x * x + z * z <= thingSightRange * thingSightRange) {
-								try {
+							if (x * x + z * z < thingSightRange * thingSightRange) {
 								cmpFov.refreshFovTarget(ref thisPos);
-								} catch (System.Exception ex) {
-									Log.Error("Error updating " + cmpFov.parent + " for " + parent + ". " + ex);
-								}
 							}
 						}
 					}

@@ -34,7 +34,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 		private bool lastIsPeeking;
 		private Faction lastFaction;
-		private int[] lastFactionShownCells;
+		private short[] lastFactionShownCells;
 
 		private float baseViewRange;
 		
@@ -529,7 +529,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 			IntVec3 position = thing.Position;
 			Faction faction = lastFaction;
-			int[] factionShownCells = lastFactionShownCells;
+			short[] factionShownCells = lastFactionShownCells;
 
 			int peekRadius = (peek ? intRadius + 1 : intRadius);
 
@@ -563,6 +563,10 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				}
 			}
 
+
+#if InternalProfile
+			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.calculateFoV-seen");
+#endif
 			// Occupied cells are always visible.
 			int occupiedX;
 			int occupiedZ;
@@ -617,6 +621,10 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 					}
 				}
 			}
+#if InternalProfile
+			ProfilingUtils.stopProfiling("CompFieldOfViewWatcher.calculateFoV-seen");
+#endif
+
 #if InternalProfile
 			ProfilingUtils.startProfiling("CompFieldOfViewWatcher.calculateFoV-unsee");
 #endif
@@ -678,7 +686,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 				IntVec3 position = thing.Position;
 				Faction faction = lastFaction;
-				int[] factionShownCells = lastFactionShownCells;
+				short[] factionShownCells = lastFactionShownCells;
 
 				CellRect occupiedRect = thing.OccupiedRect();
 
@@ -857,7 +865,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 #endif
 		}
 
-		private void unseeSeenCells(Faction faction, int[] factionShownCells) {
+		private void unseeSeenCells(Faction faction, short[] factionShownCells) {
 			bool[] viewMap = viewMapSwitch ? this.viewMap1 : this.viewMap2;
 
 			if (viewMap != null) {

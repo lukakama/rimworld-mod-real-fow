@@ -69,8 +69,8 @@ namespace RimWorldRealFoW {
 		}
 
 		public static void applySettings() {
-			SectionLayer_FoVLayer.prefFadeSpeedMult = (int)fogFadeSpeed / 10f;
-			SectionLayer_FoVLayer.prefEnableFade = (int)fogFadeSpeed != 100;
+			SectionLayer_FoVLayer.prefFadeSpeedMult = (int) fogFadeSpeed;
+			SectionLayer_FoVLayer.prefEnableFade = (int) fogFadeSpeed != 100;
 
 			SectionLayer_FoVLayer.prefFogAlpha = (byte)fogAlpha;
 

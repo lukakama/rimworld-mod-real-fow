@@ -93,7 +93,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			}
 
 #if InternalProfile
-			ProfilingUtils.startProfiling("CompHideFromPlayer.updateVisibility");
+			//ProfilingUtils.startProfiling("CompHideFromPlayer.updateVisibility");
 #endif
 
 			Thing thing = base.parent;
@@ -143,7 +143,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				}
 			}
 #if InternalProfile
-			ProfilingUtils.stopProfiling("CompHideFromPlayer.updateVisibility");
+			//ProfilingUtils.stopProfiling("CompHideFromPlayer.updateVisibility");
 #endif
 		}
 

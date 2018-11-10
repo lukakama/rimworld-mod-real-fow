@@ -5,39 +5,47 @@ using UnityEngine.Profiling;
 using Verse;
 
 namespace RimWorldRealFoW.Utils {
+	[StaticConstructorOnStartup]
 	class ProfilingUtils {
 		public class ProfileInfo {
 			public long lastUpdadeTick = 0;
 			public long count = 0;
 
-			public Stopwatch cpuTicksStopwatch = new Stopwatch();
-			public long cpuTicks;
+			public long cpuTicksStart = 0;
+			public long cpuTicks = 0;
 
 			public long allocatedMemoryStart = 0;
 			public long allocatedMemory = 0;
+
+			public ProfileInfo parentProfiling = null;
+			public long profilingCpuTicks = 0;
 		}
 
+		static Stopwatch profilingStopwatch = new Stopwatch();
+		static ProfileInfo lastProfileInfo = null;
+
 		public static Dictionary<string, ProfileInfo> profileData = new Dictionary<string, ProfileInfo>(100);
+		static ProfilingUtils() {
+			profilingStopwatch.Start();
+		}
 
 		public static void startProfiling(string code) {
+			long profilingTicks = profilingStopwatch.ElapsedTicks;
 
 			int currentTick = Find.TickManager.TicksGame;
 
 			ProfileInfo profileInfo;
 			if (!profileData.ContainsKey(code)) {
-				profileInfo = new ProfileInfo();
-
-				profileData[code] = profileInfo;
+				profileInfo = profileData[code] = new ProfileInfo();
 			} else {
 				profileInfo = profileData[code];
 			}
 
 			if (currentTick != profileInfo.lastUpdadeTick) {
 				profileInfo.lastUpdadeTick = currentTick;
-
 				profileInfo.allocatedMemoryStart = 0;
 				profileInfo.allocatedMemory = 0;
-				profileInfo.cpuTicksStopwatch.Reset();
+				profileInfo.cpuTicksStart = 0;
 				profileInfo.cpuTicks = 0;
 				profileInfo.count = 0;
 			}
@@ -47,51 +55,32 @@ namespace RimWorldRealFoW.Utils {
 				Log.Warning("Nested profiling for: " + code);
 			}
 
+			profileInfo.parentProfiling = lastProfileInfo;
+			
 			profileInfo.allocatedMemoryStart = Profiler.GetTotalAllocatedMemoryLong();
-			profileInfo.cpuTicksStopwatch.Start();
+			profileInfo.cpuTicksStart = profilingTicks;
+
+			lastProfileInfo = profileInfo;
+
+			profileInfo.profilingCpuTicks = profilingStopwatch.ElapsedTicks - profilingTicks;
 		}
 
 		public static void stopProfiling(string code) {
+			long profilingTicks = profilingStopwatch.ElapsedTicks;
+
 			ProfileInfo profileInfo = profileData[code];
 
 			profileInfo.allocatedMemory += Profiler.GetTotalAllocatedMemoryLong() - profileInfo.allocatedMemoryStart;
-
-
-			profileInfo.cpuTicksStopwatch.Stop();
-			profileInfo.cpuTicks += profileInfo.cpuTicksStopwatch.ElapsedTicks;
+			profileInfo.cpuTicks += (profilingTicks - profileInfo.cpuTicksStart) - profileInfo.profilingCpuTicks;
 
 			profileInfo.count++;
 
 			profileInfo.allocatedMemoryStart = 0;
-			profileInfo.cpuTicksStopwatch.Reset();
+			profileInfo.cpuTicksStart = 0;
 
-			//activeProfilers.Remove(code);
-		}
-
-		public static void recordPrevProfiling(string code) {
-			if (profileData.ContainsKey(code)) {
-				string codeLast = code + "-last";
-
-				ProfileInfo profileInfo = profileData[code];
-				ProfileInfo lastProfileInfo;
-				if (!profileData.ContainsKey(codeLast)) {
-					lastProfileInfo = new ProfileInfo();
-
-					profileData[codeLast] = lastProfileInfo;
-				} else {
-					lastProfileInfo = profileData[codeLast];
-				}
-
-				lastProfileInfo.lastUpdadeTick = profileInfo.lastUpdadeTick;
-
-				lastProfileInfo.allocatedMemory = Profiler.GetTotalAllocatedMemoryLong() - profileInfo.allocatedMemoryStart;
-
-				profileInfo.cpuTicksStopwatch.Stop();
-				lastProfileInfo.cpuTicks = profileInfo.cpuTicksStopwatch.ElapsedTicks;
-
-				profileInfo.allocatedMemoryStart = 0;
-				profileInfo.cpuTicksStopwatch.Reset();
-
+			lastProfileInfo = profileInfo.parentProfiling;
+			if (lastProfileInfo != null) {
+				lastProfileInfo.profilingCpuTicks += (profilingStopwatch.ElapsedTicks - profilingTicks) + profileInfo.profilingCpuTicks;
 			}
 		}
 	}

@@ -18,6 +18,10 @@ using RimWorldRealFoW.ThingComps;
 using System;
 using System.Linq;
 using System.Reflection;
+
+#if InternalProfile
+using RimWorldRealFoW.Detours.Profiling;
+#endif
 #if Profile
 using System.Runtime.InteropServices;
 #endif
@@ -144,9 +148,14 @@ namespace RimWorldRealFoW {
 			// Specific designatos:
 			patchMethod(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
 
-			// Debug Profiling
+			// Designation
+			patchMethod(typeof(Designation), typeof(_Designation), "Notify_Added");
+			patchMethod(typeof(Designation), typeof(_Designation), "Notify_Removing");
+
 #if InternalProfile
+			// Profiling
 			patchMethod(typeof(EditWindow_DebugInspector), typeof(_EditWindow_DebugInspector), "CurrentDebugString");
+			patchMethod(typeof(TickManager), typeof(_TickManager), "DoSingleTick");
 #endif
 		}
 

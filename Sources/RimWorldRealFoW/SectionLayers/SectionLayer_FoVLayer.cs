@@ -13,18 +13,20 @@
 //   limitations under the License.
 using RimWorld;
 using RimWorldRealFoW.Utils;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
+using static RimWorldRealFoW.RealFoWModSettings;
 
 namespace RimWorldRealFoW.SectionLayers {
 	public class SectionLayer_FoVLayer : SectionLayer {
 		public static bool prefEnableFade = true;
-		public static float prefFadeSpeedMult = 2;
+		public static int prefFadeSpeedMult = (int) FogFadeSpeedEnum.Medium;
 		public static byte prefFogAlpha = 86;
 
 		private MapComponentSeenFog pawnFog;
-		private int[] factionShownGrid = null;
+		private short[] factionShownGrid = null;
 
 		public static MapMeshFlag mapMeshFlag = MapMeshFlag.None;
 
@@ -32,14 +34,14 @@ namespace RimWorldRealFoW.SectionLayers {
 			// Probably not needed... check just in case the static constructor is executed more than one time (extensions, etc)...
 			if (mapMeshFlag == MapMeshFlag.None) {
 				// Inject new flag.
-				List<MapMeshFlag> allFlags = (List<MapMeshFlag>) typeof(MapDrawer).Assembly.GetType("Verse.MapMeshFlagUtility").GetField("allFlags", GenGeneric.BindingFlagsAll).GetValue(null);
+				List<MapMeshFlag> allFlags = MapMeshFlagUtility.allFlags;
 				MapMeshFlag maxMapMeshFlag = MapMeshFlag.None;
 				foreach (MapMeshFlag mapMeshFlag in allFlags) {
 					if (mapMeshFlag > maxMapMeshFlag) {
 						maxMapMeshFlag = mapMeshFlag;
 					}
 				}
-				SectionLayer_FoVLayer.mapMeshFlag = (MapMeshFlag) (((int) maxMapMeshFlag) * 2);
+				SectionLayer_FoVLayer.mapMeshFlag = (MapMeshFlag) (((int) maxMapMeshFlag) << 1);
 				allFlags.Add(SectionLayer_FoVLayer.mapMeshFlag);
 
 				Log.Message("Injected new mapMeshFlag: " + SectionLayer_FoVLayer.mapMeshFlag);
@@ -57,7 +59,7 @@ namespace RimWorldRealFoW.SectionLayers {
 		private bool[] vertsSeen = new bool[9];
 
 		private byte[] targetAlphas = new byte[0];
-		private long[] alphaChangeTick = new long[0];
+		private int[] alphaChangeTick = new int[0];
 		private Color32[] meshColors = new Color32[0];
 
 		public override bool Visible {
@@ -137,7 +139,7 @@ namespace RimWorldRealFoW.SectionLayers {
 					MakeBaseGeometry(this.section, subMesh, AltitudeLayer.FogOfWar);
 
 					targetAlphas = new byte[subMesh.mesh.vertexCount];
-					alphaChangeTick = new long[subMesh.mesh.vertexCount];
+					alphaChangeTick = new int[subMesh.mesh.vertexCount];
 					meshColors = new Color32[subMesh.mesh.vertexCount];
 				} else {
 					firstGeneration = false;
@@ -149,8 +151,9 @@ namespace RimWorldRealFoW.SectionLayers {
 				if (this.factionShownGrid == null) {
 					this.factionShownGrid = pawnFog.getFactionShownCells(Faction.OfPlayer);
 				}
-				int[] factionShownGrid = this.factionShownGrid;
+				short[] factionShownGrid = this.factionShownGrid;
 
+				int[] playerShownCellsTick = pawnFog.playerVisibilityChangeTick;
 				bool[] knownGrid = pawnFog.knownCells;
 
 				int mapSizeX = base.Map.Size.x;
@@ -161,7 +164,6 @@ namespace RimWorldRealFoW.SectionLayers {
 
 
 				bool hasFoggedVerts = false;
-				long fogTransitionTick = (long)(Find.TickManager.TicksGame * prefFadeSpeedMult);
 
 				int cellIdx;
 				int cellIdxN;
@@ -177,9 +179,12 @@ namespace RimWorldRealFoW.SectionLayers {
 				bool adjCellKnown;
 
 				byte alpha;
+
+				int cellVisibilityChangeTick;
 				for (int x = cellRect.minX; x <= cellRect.maxX; x++) {
 					for (int z = cellRect.minZ; z <= cellRect.maxZ; z++) {
 						cellIdx = z * mapSizeX + x;
+						cellVisibilityChangeTick = playerShownCellsTick[cellIdx];
 						if (!fogGrid[cellIdx]) {
 							if (factionShownGrid[cellIdx] == 0) {
 								cellKnown = knownGrid[cellIdx];
@@ -326,13 +331,14 @@ namespace RimWorldRealFoW.SectionLayers {
 									meshColors[colorIdx] = new Color32(255, 255, 255, alpha);
 								}
 								if (prefEnableFade) {
+									activeFogTransitions = true;
 									targetAlphas[colorIdx] = alpha;
-									alphaChangeTick[colorIdx] = fogTransitionTick;
+									alphaChangeTick[colorIdx] = cellVisibilityChangeTick;
 								}
 							} else if (targetAlphas[colorIdx] != alpha) {
 								activeFogTransitions = true;
 								targetAlphas[colorIdx] = alpha;
-								alphaChangeTick[colorIdx] = fogTransitionTick;
+								alphaChangeTick[colorIdx] = cellVisibilityChangeTick;
 							}
 
 							colorIdx++;
@@ -353,7 +359,8 @@ namespace RimWorldRealFoW.SectionLayers {
 
 		public override void DrawLayer() {
 			if (prefEnableFade && this.Visible && activeFogTransitions) {
-				long fogTransitionTick = (long) (Find.TickManager.TicksGame * prefFadeSpeedMult);
+				int fogTransitionTick = Find.TickManager.TicksGame;
+				int gameSpeed = Math.Max((int) Find.TickManager.CurTimeSpeed, 1);
 
 				bool alphaUpdated = false;
 
@@ -368,13 +375,20 @@ namespace RimWorldRealFoW.SectionLayers {
 					alpha = colors[i].a;
 					if (alpha > targetAlpha) {
 						alphaUpdated = true;
-						alpha = (byte) Mathf.Max(targetAlpha, alpha - (fogTransitionTick - alphaChangeTick[i]));
-						colors[i] = new Color32(255, 255, 255, alpha);
+						if (fogTransitionTick != alphaChangeTick[i]) {
+							alpha = (byte)Math.Max(targetAlpha, alpha - prefFadeSpeedMult / gameSpeed * (fogTransitionTick - alphaChangeTick[i]));
+							colors[i] = new Color32(255, 255, 255, alpha);
+							alphaChangeTick[i] = fogTransitionTick;
+						}
 					} else if (alpha < targetAlpha) {
 						alphaUpdated = true;
-						alpha = (byte) Mathf.Min(targetAlpha, alpha + (fogTransitionTick - alphaChangeTick[i]));
-						colors[i] = new Color32(255, 255, 255, alpha);
+						if (fogTransitionTick != alphaChangeTick[i]) {
+							alpha = (byte)Math.Min(targetAlpha, alpha + prefFadeSpeedMult / gameSpeed * (fogTransitionTick - alphaChangeTick[i]));
+							colors[i] = new Color32(255, 255, 255, alpha);
+							alphaChangeTick[i] = fogTransitionTick;
+						}
 					}
+
 					if (alpha != 0) {
 						hasFoggedVerts = true;
 					}

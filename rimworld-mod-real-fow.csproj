@@ -78,7 +78,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Sources\RimWorldRealFoW\Detours\_EditWindow_DebugInspector.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\Profiling\_TickManager.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\_Designation.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\Detours\Profiling\_EditWindow_DebugInspector.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MainTabWindow_Wildlife.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_BeautyUtility.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MoteBubble.cs" />
@@ -110,7 +112,6 @@
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompFieldOfViewWatcher.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_MouseoverReadout.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Selector.cs" />
-    <Compile Include="Sources\RimWorldRealFoW\Detours\Detours.cs" />
     <Compile Include="Sources\RimWorldRealFoW\SectionLayers\SectionLayer_FoVLayer.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ShadowCasters\ShadowCaster.cs" />
     <Compile Include="Sources\RimWorldRealFoW\RealFoWModStarter.cs" />

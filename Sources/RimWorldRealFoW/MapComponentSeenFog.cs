@@ -11,6 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
+using Harmony;
 using RimWorld;
 using RimWorldRealFoW.SectionLayers;
 using RimWorldRealFoW.ShadowCasters;
@@ -24,15 +25,21 @@ using Verse;
 
 namespace RimWorldRealFoW {
 	public class MapComponentSeenFog : MapComponent {
-		public int[][] factionsShownCells = null;
+		public short[][] factionsShownCells = null;
 		public bool[] knownCells = null;
+
+		public int[] playerVisibilityChangeTick = null;
 
 		public bool[] viewBlockerCells = null;
 
 		private IntVec3[] idxToCellCache;
 
 		private List<CompHideFromPlayer>[] compHideFromPlayerGrid;
+		private byte[] compHideFromPlayerGridCount;
+
 		public List<CompAffectVision>[] compAffectVisionGrid;
+
+		private Designation[] mineDesignationGrid;
 
 		private int maxFactionLoadId;
 
@@ -40,7 +47,6 @@ namespace RimWorldRealFoW {
 		public int mapSizeX;
 		public int mapSizeZ;
 		private FogGrid fogGrid;
-		private DesignationManager designationManager;
 		private MapDrawer mapDrawer;
 
 		private ThingGrid thingGrid;
@@ -48,6 +54,12 @@ namespace RimWorldRealFoW {
 		public bool initialized = false;
 
 		public List<CompFieldOfViewWatcher> fowWatchers;
+
+		private Section[] sections = null;
+		int sectionsSizeX;
+		int sectionsSizeY;
+
+		int currentGameTick = 0;
 
 		public MapComponentSeenFog(Map map) : base(map) {
 			mapCellLength = map.cellIndices.NumGridCells;
@@ -60,25 +72,30 @@ namespace RimWorldRealFoW {
 
 			fowWatchers = new List<CompFieldOfViewWatcher>(1000);
 
-			designationManager = this.map.designationManager;
-
 			maxFactionLoadId = 0;
 			foreach (Faction faction in Find.World.factionManager.AllFactionsListForReading) {
 				maxFactionLoadId = Math.Max(maxFactionLoadId, faction.loadID);
 			}
-			factionsShownCells = new int[maxFactionLoadId + 1][];
+			factionsShownCells = new short[maxFactionLoadId + 1][];
 
 			knownCells = new bool[mapCellLength];
 			viewBlockerCells = new bool[mapCellLength];
+			playerVisibilityChangeTick = new int[mapCellLength];
+
+			mineDesignationGrid = new Designation[mapCellLength];
 
 			idxToCellCache = new IntVec3[mapCellLength];
 			compHideFromPlayerGrid = new List<CompHideFromPlayer>[mapCellLength];
+			compHideFromPlayerGridCount = new byte[mapCellLength];
 			compAffectVisionGrid = new List<CompAffectVision>[mapCellLength];
 			for (int i = 0; i < mapCellLength; i++) {
 				idxToCellCache[i] = CellIndicesUtility.IndexToCell(i, mapSizeX);
 
 				compHideFromPlayerGrid[i] = new List<CompHideFromPlayer>(16);
+				compHideFromPlayerGridCount[i] = 0;
 				compAffectVisionGrid[i] = new List<CompAffectVision>(16);
+
+				playerVisibilityChangeTick[i] = 0;
 			}
 		}
 
@@ -86,11 +103,9 @@ namespace RimWorldRealFoW {
 #if InternalProfile
 			ProfilingUtils.startProfiling("0-calibration");
 			ProfilingUtils.stopProfiling("0-calibration");
-
-			ProfilingUtils.recordPrevProfiling("MapComponentSeenFog.MapComponentTick");
-
-			ProfilingUtils.startProfiling("MapComponentSeenFog.MapComponentTick");
 #endif
+
+			currentGameTick = Find.TickManager.TicksGame;
 
 			if (!initialized) {
 				initialized = true;
@@ -99,7 +114,7 @@ namespace RimWorldRealFoW {
 			}
 		}
 
-		public int[] getFactionShownCells(Faction faction) {
+		public short[] getFactionShownCells(Faction faction) {
 			if (faction == null) {
 				return null;
 			}
@@ -107,17 +122,12 @@ namespace RimWorldRealFoW {
 			if (maxFactionLoadId < faction.loadID) {
 				// Increase the jagged array.
 				maxFactionLoadId = faction.loadID + 1;
-				int[][] newFactionShownCells = new int[maxFactionLoadId + 1][];
-
-				// Copy old references.
-				Array.Copy(factionsShownCells, newFactionShownCells, factionsShownCells.Length);
-
-				factionsShownCells = newFactionShownCells;
+				Array.Resize(ref factionsShownCells, maxFactionLoadId + 1);
 			}
 
 			// Lazy init faction shown grids (some mods could create dummy factions not used, causing a huge amount of memory waste).
 			if (factionsShownCells[faction.loadID] == null) {
-				factionsShownCells[faction.loadID] = new int[mapCellLength];
+				factionsShownCells[faction.loadID] = new short[mapCellLength];
 			}
 
 			return factionsShownCells[faction.loadID];
@@ -133,12 +143,17 @@ namespace RimWorldRealFoW {
 
 		public void registerCompHideFromPlayerPosition(CompHideFromPlayer comp, int x, int z) {
 			if (x >= 0 && z >= 0 && x < mapSizeX && z < mapSizeZ) {
-				compHideFromPlayerGrid[(z * mapSizeX) + x].Add(comp);
+				int idx = (z * mapSizeX) + x;
+				compHideFromPlayerGrid[idx].Add(comp);
+				compHideFromPlayerGridCount[idx]++;
+
 			}
 		}
 		public void deregisterCompHideFromPlayerPosition(CompHideFromPlayer comp, int x, int z) {
 			if (x >= 0 && z >= 0 && x < mapSizeX && z < mapSizeZ) {
-				compHideFromPlayerGrid[(z * mapSizeX) + x].Remove(comp);
+				int idx = (z * mapSizeX) + x;
+				compHideFromPlayerGrid[idx].Remove(comp);
+				compHideFromPlayerGridCount[idx]--;
 			}
 		}
 
@@ -153,7 +168,38 @@ namespace RimWorldRealFoW {
 			}
 		}
 
+		public void registerMineDesignation(Designation des) {
+			IntVec3 targetCell = des.target.Cell;
+			mineDesignationGrid[(targetCell.z * mapSizeX) + targetCell.x] = des;
+		}
+
+		public void deregisterMineDesignation(Designation des) {
+			IntVec3 targetCell = des.target.Cell;
+			mineDesignationGrid[(targetCell.z * mapSizeX) + targetCell.x] = null;
+		}
+		
 		private void init() {
+			// Retrieve map sections and store in a linear array.
+			Section[,] mapDrawerSections = (Section[,])Traverse.Create(mapDrawer).Field("sections").GetValue();
+			sectionsSizeX = mapDrawerSections.GetLength(0);
+			sectionsSizeY = mapDrawerSections.GetLength(1);
+
+			sections = new Section[sectionsSizeX * sectionsSizeY];
+			for (int y = 0; y < sectionsSizeY; y++) {
+				for (int x = 0; x < sectionsSizeX; x++) {
+					sections[y * sectionsSizeX + x] = mapDrawerSections[x, y];
+				}
+			}
+
+			// Initialize mining designators (add notifications intercepted by detours aren't fired on load).
+			List<Designation> designations = map.designationManager.allDesignations;
+			for (int i = 0; i < designations.Count; i++) {
+				Designation des = designations[i];
+				if (des.def == DesignationDefOf.Mine && !des.target.HasThing) {
+					registerMineDesignation(des);
+				}
+			}
+
 			// Reveal the starting position if home map and no pawns (landing).
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
@@ -206,34 +252,36 @@ namespace RimWorldRealFoW {
 
 		public void revealCell(int idx) {
 			if (!knownCells[idx]) {
-				IntVec3 cell = idxToCellCache[idx];
+				ref IntVec3 cell = ref idxToCellCache[idx];
 
 				knownCells[idx] = true;
 
-				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
+				Designation designation = mineDesignationGrid[idx];
 				if (designation != null && cell.GetFirstMineable(map) == null) {
 					designation.Delete();
 				}
 
 				if (initialized) {
-					mapDrawer.MapMeshDirty(cell, SectionLayer_FoVLayer.mapMeshFlag, true, false);
+					setMapMeshDirtyFlag(idx);
 				}
 
-				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
-				int compCount = comps.Count;
-				for (int i = 0; i < compCount; i++) {
-					comps[i].updateVisibility(true);
+				if (compHideFromPlayerGridCount[idx] != 0) {
+					List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+					int compCount = comps.Count;
+					for (int i = 0; i < compCount; i++) {
+						comps[i].updateVisibility(true);
+					}
 				}
 			}
 		}
 
-		public void incrementSeen(Faction faction, int[] factionShownCells, int idx) {
+		public void incrementSeen(Faction faction, short[] factionShownCells, int idx) {
 			if ((++factionShownCells[idx] == 1) && faction.def.isPlayer) {
-				IntVec3 cell = idxToCellCache[idx];
+				ref IntVec3 cell = ref idxToCellCache[idx];
 
 				knownCells[idx] = true;
 
-				Designation designation = designationManager.DesignationAt(cell, DesignationDefOf.Mine);
+				Designation designation = mineDesignationGrid[idx];
 				if (designation != null && cell.GetFirstMineable(map) == null) {
 					designation.Delete();
 				}
@@ -242,76 +290,100 @@ namespace RimWorldRealFoW {
 					setMapMeshDirtyFlag(idx);
 				}
 
-				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
-				int compCount = comps.Count;
-				for (int i = 0; i < compCount; i++) {
-					comps[i].updateVisibility(true);
+				if (compHideFromPlayerGridCount[idx] != 0) {
+					List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+					int compCount = comps.Count;
+					for (int i = 0; i < compCount; i++) {
+						comps[i].updateVisibility(true);
+					}
 				}
 			}
 		}
 
-		public void decrementSeen(Faction faction, int[] factionShownCells, int idx) {
+		public void decrementSeen(Faction faction, short[] factionShownCells, int idx) {
 			if ((--factionShownCells[idx] == 0) && faction.def.isPlayer) {
+				playerVisibilityChangeTick[idx] = currentGameTick;
+
 				if (initialized) {
 					setMapMeshDirtyFlag(idx);
 				}
 
-				List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
-				int compCount = comps.Count;
-				for (int i = 0; i < compCount; i++) {
-					comps[i].updateVisibility(true);
+				if (compHideFromPlayerGridCount[idx] != 0) {
+					List<CompHideFromPlayer> comps = compHideFromPlayerGrid[idx];
+					int compCount = comps.Count;
+					for (int i = 0; i < compCount; i++) {
+						comps[i].updateVisibility(true);
+					}
 				}
 			}
 		}
 
 		private void setMapMeshDirtyFlag(int idx) {
-			ref IntVec3 cell = ref idxToCellCache[idx];
+			int x = idx % mapSizeX;
+			int z = idx / mapSizeX;
 
-			// Update cell section.
-			mapDrawer.SectionAt(cell).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+			int sectionX = x / 17;
+			int sectionY = z / 17;
 
-			int sectionX = cell.x % 17;
-			int sectionZ = cell.z % 17;
 
+			// Update visibility change tick for this cell and proximal ones.
+			int minProxX = Math.Max(0, x - 1);
+			int maxProxZ = Math.Min(z + 2, mapSizeZ);
+			int horizontalCellsCount = Math.Min(x + 2, mapSizeX) - minProxX;
+
+			int startHorizontalIdx;
+			for (int proxZ = Math.Max(0, z - 1); proxZ < maxProxZ; proxZ++) {
+				startHorizontalIdx = (proxZ * mapSizeX) + minProxX;
+				for (int horizontalPos = 0; horizontalPos < horizontalCellsCount; horizontalPos++) {
+					playerVisibilityChangeTick[startHorizontalIdx + horizontalPos] = currentGameTick;
+				}
+			}
+
+			
+			// Update current section.
+			sections[sectionY * sectionsSizeX + sectionX].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+
+			
 			// Update neighbours sections if needed.
-			if (sectionX == 0) {
-				if (cell.x != 0) {
-					mapDrawer.SectionAt(cell + IntVec3.West).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
-					if (sectionZ == 0) {
-						if (cell.z != 0) {
-							mapDrawer.SectionAt(cell + IntVec3.SouthWest).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+			int relSecX = x % 17;
+			int relSecZ = z % 17;
+			if (relSecX == 0) {
+				if (sectionX != 0) {
+					sections[sectionY * sectionsSizeX + sectionX].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+					if (relSecZ == 0) {
+						if (sectionY != 0) {
+							sections[(sectionY - 1) * sectionsSizeX + (sectionX - 1)].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
 						}
-					} else if (sectionZ == 16) {
-						if (cell.z < mapSizeZ) {
-							mapDrawer.SectionAt(cell + IntVec3.NorthWest).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+					} else if (relSecZ == 16) {
+						if (sectionY < sectionsSizeY) {
+							sections[(sectionY + 1) * sectionsSizeX + (sectionX - 1)].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
 						}
 					}
 				}
-			} else if (sectionX == 16) {
-				if (cell.x < mapSizeX) {
-					mapDrawer.SectionAt(cell + IntVec3.East).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
-					if (sectionZ == 0) {
-						if (cell.z != 0) {
-							mapDrawer.SectionAt(cell + IntVec3.SouthEast).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+			} else if (relSecX == 16) {
+				if (sectionX < sectionsSizeX) {
+					sections[sectionY * sectionsSizeX + (sectionX + 1)].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+					if (relSecZ == 0) {
+						if (sectionY != 0) {
+							sections[(sectionY - 1) * sectionsSizeX + (sectionX + 1)].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
 						}
-					} else if (sectionZ == 16) {
-						if (cell.z < mapSizeZ) {
-							mapDrawer.SectionAt(cell + IntVec3.NorthEast).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+					} else if (relSecZ == 16) {
+						if (sectionY < sectionsSizeY) {
+							sections[(sectionY + 1) * sectionsSizeX + (sectionX + 1)].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
 						}
 					}
 				}
 			}
 
-			if (sectionZ == 0) {
-				if (cell.z != 0) {
-					mapDrawer.SectionAt(cell + IntVec3.South).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+			if (relSecZ == 0) {
+				if (sectionY != 0) {
+					sections[(sectionY - 1) * sectionsSizeX + sectionX].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
 				}
-			} else if (sectionZ == 16) {
-				if (cell.z < mapSizeZ) {
-					mapDrawer.SectionAt(cell + IntVec3.North).dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
+			} else if (relSecZ == 16) {
+				if (sectionY < sectionsSizeY) {
+					sections[(sectionY + 1) * sectionsSizeX + sectionX].dirtyFlags |= SectionLayer_FoVLayer.mapMeshFlag;
 				}
 			}
 		}
-
 	}
 }
