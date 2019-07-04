@@ -21,6 +21,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -34,6 +35,7 @@
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <DebugSymbols>false</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Profile|AnyCPU'">
     <OutputPath>..\..\..\SteamLibrary\SteamApps\common\RimWorld\Mods\RealFoW\Assemblies\</OutputPath>
@@ -93,6 +95,7 @@
     <Compile Include="Sources\RimWorldRealFoW\Detours\_SectionLayer_ThingsGeneral.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_Pawn.cs" />
     <Compile Include="Sources\RimWorldRealFoW\Detours\_ReservationUtility.cs" />
+    <Compile Include="Sources\RimWorldRealFoW\RealFoWModDefaultsDef.cs" />
     <Compile Include="Sources\RimWorldRealFoW\RealFoWModSettings.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\CompMainComponent.cs" />
     <Compile Include="Sources\RimWorldRealFoW\ThingComps\ThingSubComps\CompComponentsPositionTracker.cs" />
@@ -132,6 +135,9 @@
       <SubType>Designer</SubType>
     </Content>
     <Content Include="About\Preview.png" />
+    <Content Include="Defs\Mod_Defaults.xml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Defs\ResearchProjects_Tier2_Surveillance.xml" />
     <Content Include="Defs\Buildings_Surveillance.xml">
       <SubType>Designer</SubType>

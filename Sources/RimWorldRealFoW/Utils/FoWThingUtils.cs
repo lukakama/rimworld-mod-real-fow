@@ -1,10 +1,25 @@
 ﻿using RimWorld;
 using RimWorldRealFoW.ThingComps;
 using RimWorldRealFoW.ThingComps.ThingSubComps;
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorldRealFoW.Utils {
 	public static class FoWThingUtils {
+
+
+		private static readonly Dictionary<IntVec3, IntVec3[]> peekArrayCache = new Dictionary<IntVec3, IntVec3[]>(15);
+
+		public static IntVec3[] getPeekArray(IntVec3 intVec3) {
+			if (peekArrayCache.ContainsKey(intVec3)) {
+				return peekArrayCache[intVec3];
+			} else {
+				IntVec3[] newArray = new IntVec3[] { intVec3 };
+				peekArrayCache[intVec3] = newArray;
+				return newArray;
+			}
+		}
+
 		public static bool fowIsVisible(this Thing _this, bool forRender = false) {
 			if (_this.Spawned) {
 				if (_this.def.isSaveable && !_this.def.saveCompressible) {

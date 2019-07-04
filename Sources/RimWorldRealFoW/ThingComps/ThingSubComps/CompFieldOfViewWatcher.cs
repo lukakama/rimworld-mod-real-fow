@@ -24,15 +24,11 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 	public class CompFieldOfViewWatcher : ThingSubComp {
 		private static readonly IntVec3 iv3Invalid = IntVec3.Invalid;
 
-
-		public static readonly float NON_MECH_DEFAULT_RANGE = 32f;
-		public static readonly float MECH_DEFAULT_RANGE = 40f;
-
 		private bool calculated;
 		private IntVec3 lastPosition;
 		public int lastSightRange;
 
-		private bool lastIsPeeking;
+		private IntVec3[] lastPeekDirections;
 		private Faction lastFaction;
 		private short[] lastFactionShownCells;
 
@@ -83,14 +79,13 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 		private bool disabled;
 
-
 		public override void PostSpawnSetup(bool respawningAfterLoad) {
 			setupDone = true;
 
 			calculated = false;
 			lastPosition = iv3Invalid;
 			lastSightRange = 0;
-			lastIsPeeking = false;
+			lastPeekDirections = null;
 
 			viewMap1 = null;
 			viewMap2 = null;
@@ -124,11 +119,12 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			} else {
 				isMechanoid = false;
 			}
-			
+
+			RealFoWModDefaultsDef realFoWModDefaultsDef = DefDatabase<RealFoWModDefaultsDef>.GetNamed(RealFoWModDefaultsDef.DEFAULT_DEF_NAME);
 			if (!isMechanoid) {
-				baseViewRange = NON_MECH_DEFAULT_RANGE;
+				baseViewRange = realFoWModDefaultsDef.baseViewRange;
 			} else {
-				baseViewRange = MECH_DEFAULT_RANGE;
+				baseViewRange = Mathf.Round(realFoWModDefaultsDef.baseViewRange * 1.25f);
 			}
 
 			if ((pawn == null) && !(turret != null && compMannable == null) && (compProvideVision == null) && (building == null)) {
@@ -240,7 +236,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 						// Alive Pawns!
 
 						int sightRange;
-						bool isPeeking = false;
+						IntVec3[] peekDirection = null;
 						if (raceProps != null && raceProps.Animal && (pawn.playerSettings == null || pawn.playerSettings.Master == null || pawn.training == null || !pawn.training.HasLearned(TrainableDefOf.Release))) {
 							// If animal, only those with a master set and release training can contribute to the faction FoW.
 							sightRange = -1;
@@ -250,16 +246,18 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							if ((pawnPather == null || !pawnPather.Moving) && pawn.CurJob != null) {
 								JobDef jobDef = pawn.CurJob.def;
 								if (jobDef == JobDefOf.AttackStatic || jobDef == JobDefOf.AttackMelee || jobDef == JobDefOf.Wait_Combat || jobDef == JobDefOf.Hunt) {
-									isPeeking = true;
+									peekDirection = GenAdj.CardinalDirections;
+								} else if (jobDef == JobDefOf.Mine && pawn.CurJob.targetA != null && pawn.CurJob.targetA.Cell != IntVec3.Invalid) {
+									peekDirection = FoWThingUtils.getPeekArray(pawn.CurJob.targetA.Cell - parent.Position);
 								}
 							}
 						}
 
-						if (!calculated || forceUpdate || newFaction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange || isPeeking != lastIsPeeking) {
+						if (!calculated || forceUpdate || newFaction != lastFaction || newPosition != lastPosition || sightRange != lastSightRange || peekDirection != lastPeekDirections) {
 							calculated = true;
 							lastPosition = newPosition;
 							lastSightRange = sightRange;
-							lastIsPeeking = isPeeking;
+							lastPeekDirections = peekDirection;
 
 							// Faction change. Unseen and clear old seen cells
 							if (lastFaction != newFaction) {
@@ -272,7 +270,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 
 							if (sightRange != -1) {
-								calculateFoV(thing, sightRange, isPeeking);
+								calculateFoV(thing, sightRange, peekDirection);
 							} else {
 								unseeSeenCells(lastFaction, lastFactionShownCells);
 							}
@@ -305,7 +303,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							}
 
 							if (sightRange != 0) {
-								calculateFoV(thing, sightRange, false);
+								calculateFoV(thing, sightRange, null);
 							} else {
 								unseeSeenCells(lastFaction, lastFactionShownCells);
 								revealOccupiedCells();
@@ -339,7 +337,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 							}
 
 							if (sightRange != 0) {
-								calculateFoV(thing, sightRange, false);
+								calculateFoV(thing, sightRange, null);
 							} else {
 								unseeSeenCells(lastFaction, lastFactionShownCells);
 								revealOccupiedCells();
@@ -512,7 +510,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			}
 		}
 
-		public void calculateFoV(Thing thing, int intRadius, bool peek) {
+		public void calculateFoV(Thing thing, int intRadius, IntVec3[] peekDirections) {
 			if (!setupDone) {
 				return;
 			}
@@ -531,7 +529,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 			Faction faction = lastFaction;
 			short[] factionShownCells = lastFactionShownCells;
 
-			int peekRadius = (peek ? intRadius + 1 : intRadius);
+			int peekRadius = (peekDirections != null ? intRadius + 1 : intRadius);
 
 			// Calculate new view rect.
 			CellRect occupedRect = thing.OccupiedRect();
@@ -598,12 +596,12 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				int viewPositionsCount;
 				viewPositions[0] = position;
 
-				if (!peek) {
+				if (peekDirections == null) {
 					viewPositionsCount = 1;
 				} else {
-					viewPositionsCount = 5;
-					for (int i = 0; i < 4; i++) {
-						viewPositions[1 + i] = position + GenAdj.CardinalDirections[i];
+					viewPositionsCount = 1 + peekDirections.Length;
+					for (int i = 0; i < viewPositionsCount - 1; i++) {
+						viewPositions[1 + i] = position + peekDirections[i];
 					}
 				}
 				int mapWitdh = map.Size.x - 1;
@@ -679,7 +677,7 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 
 			} else {
 				int intRadius = lastSightRange;
-				bool peek = lastIsPeeking;
+				IntVec3[] peekDirections = lastPeekDirections;
 
 				int mapSizeX = this.mapSizeX;
 				int mapSizeZ = this.mapSizeZ;
@@ -727,12 +725,12 @@ namespace RimWorldRealFoW.ThingComps.ThingSubComps {
 				int viewPositionsCount;
 				viewPositions[0] = position;
 
-				if (!peek) {
+				if (peekDirections == null) {
 					viewPositionsCount = 1;
 				} else {
-					viewPositionsCount = 5;
-					for (int i = 0; i < 4; i++) {
-						viewPositions[1 + i] = position + GenAdj.CardinalDirections[i];
+					viewPositionsCount = 1 + peekDirections.Length;
+					for (int i = 0; i < viewPositionsCount - 1; i++) {
+						viewPositions[1 + i] = position + peekDirections[i];
 					}
 				}
 				int mapWitdh = map.Size.x - 1;

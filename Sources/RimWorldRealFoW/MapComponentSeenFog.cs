@@ -203,7 +203,8 @@ namespace RimWorldRealFoW {
 			// Reveal the starting position if home map and no pawns (landing).
 			if (map.IsPlayerHome && map.mapPawns.ColonistsSpawnedCount == 0) {
 				IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
-				ShadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, Mathf.RoundToInt(CompFieldOfViewWatcher.NON_MECH_DEFAULT_RANGE),
+				int baseViewRange = Mathf.RoundToInt(DefDatabase<RealFoWModDefaultsDef>.GetNamed(RealFoWModDefaultsDef.DEFAULT_DEF_NAME).baseViewRange);
+				ShadowCaster.computeFieldOfViewWithShadowCasting(playerStartSpot.x, playerStartSpot.z, baseViewRange,
 					viewBlockerCells, map.Size.x, map.Size.z, 
 					false, null, null, null, // Directly updating known cells. No need to call incrementSeen.
 					knownCells, 0, 0, mapSizeX, 
