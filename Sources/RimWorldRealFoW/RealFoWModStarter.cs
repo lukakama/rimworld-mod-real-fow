@@ -11,11 +11,12 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-using Harmony;
+using HarmonyLib;
 using RimWorld;
 using RimWorldRealFoW.Detours;
 using RimWorldRealFoW.ThingComps;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -38,14 +39,14 @@ namespace RimWorldRealFoW {
 		private static extern void mono_profiler_load(string args);
 #endif
 
-		static HarmonyInstance harmony;
+		static Harmony harmony;
 		static RealFoWModStarter() {
 
 #if Profile
 			mono_profiler_load(@"default:time,file=d:/rimworld-prof.mprf");
 #endif
 
-			harmony = HarmonyInstance.Create("com.github.lukakama.rimworldmodrealfow");
+			harmony = new Harmony("com.github.lukakama.rimworldmodrealfow");
 			injectDetours();
 			harmony = null;
 		}
@@ -106,16 +107,20 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(EnvironmentStatsDrawer), typeof(_EnvironmentStatsDrawer), "ShouldShowWindowNow");
 			
 			patchMethod(typeof(Messages), typeof(_Messages), "Message", typeof(string), typeof(LookTargets), typeof(MessageTypeDef), typeof(bool));
-			patchMethod(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string));
+			patchMethod(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(TaggedString), typeof(TaggedString), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(Quest), typeof(List<ThingDef>), typeof(string));
 
 			patchMethod(typeof(MoteBubble), typeof(_MoteBubble), "Draw", new Type[] {});
+
+			patchMethod(typeof(FertilityGrid), typeof(_FertilityGrid), "CellBoolDrawerGetBoolInt");
+			patchMethod(typeof(TerrainGrid), typeof(_TerrainGrid), "CellBoolDrawerGetBoolInt");
+			patchMethod(typeof(RoofGrid), typeof(_RoofGrid), "GetCellBool");
+			
 
 			// Area only designators:
 			patchMethod(typeof(Designator_AreaBuildRoof), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_AreaNoRoof), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_ZoneAdd_Growing), typeof(_Designator_Prefix), "CanDesignateCell");
-			patchMethod(typeof(Designator_ZoneAddStockpile_Dumping), typeof(_Designator_Prefix), "CanDesignateCell");
-			patchMethod(typeof(Designator_ZoneAddStockpile_Resources), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_ZoneAddStockpile), typeof(_Designator_Prefix), "CanDesignateCell");
 
 			// Area + thing designators:
 			patchMethod(typeof(Designator_Claim), typeof(_Designator_Prefix), "CanDesignateCell");
@@ -126,16 +131,12 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(Designator_Haul), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_Hunt), typeof(_Designator_Prefix), "CanDesignateThing");
-			patchMethod(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateCell");
-			patchMethod(typeof(Designator_PlantsCut), typeof(_Designator_Prefix), "CanDesignateThing");
-			patchMethod(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Plants), typeof(_Designator_Prefix), "CanDesignateCell");
+			patchMethod(typeof(Designator_Plants), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_PlantsHarvest), typeof(_Designator_Prefix), "CanDesignateThing");
-			patchMethod(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_PlantsHarvestWood), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateCell");
-			patchMethod(typeof(Designator_RemoveFloor), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_SmoothSurface), typeof(_Designator_Prefix), "CanDesignateCell");
-			patchMethod(typeof(Designator_SmoothSurface), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateCell");
 			patchMethod(typeof(Designator_Tame), typeof(_Designator_Prefix), "CanDesignateThing");
 			patchMethod(typeof(Designator_Uninstall), typeof(_Designator_Prefix), "CanDesignateCell");
@@ -147,7 +148,7 @@ namespace RimWorldRealFoW {
 			
 			// Specific designatos:
 			patchMethod(typeof(Designator_Mine), typeof(_Designator_Mine), "CanDesignateCell");
-
+			
 			// Designation
 			patchMethod(typeof(Designation), typeof(_Designation), "Notify_Added");
 			patchMethod(typeof(Designation), typeof(_Designation), "Notify_Removing");
@@ -169,6 +170,10 @@ namespace RimWorldRealFoW {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll, null, types, null);
 			} else {
 				method = sourceType.GetMethod(methodName, GenGeneric.BindingFlagsAll);
+			}
+
+			if (sourceType != method.DeclaringType) {
+				Log.Message("Inconsistent method declaring type for method " + methodName + ": expected " + sourceType + " but found " + method.DeclaringType);
 			}
 
 			if (method != null) {

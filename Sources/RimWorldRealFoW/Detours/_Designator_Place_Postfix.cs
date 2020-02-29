@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using RimWorldRealFoW.Utils;
 using Verse;
 
@@ -12,13 +12,11 @@ namespace RimWorldRealFoW.Detours {
 				Map map = traverse.Property("Map").GetValue<Map>();
 				MapComponentSeenFog seenFog = map.getMapComponentSeenFog();
 				if (seenFog != null) {
-					CellRect.CellRectIterator itCellRect = cellRect.GetIterator();
-					while (!itCellRect.Done()) {
-						if (!seenFog.knownCells[map.cellIndices.CellToIndex(itCellRect.Current)]) {
+					foreach (IntVec3 cell in cellRect) {
+						if (!seenFog.knownCells[map.cellIndices.CellToIndex(cell)]) {
 							__result = "CannotPlaceInUndiscovered".Translate();
 							return;
 						}
-						itCellRect.MoveNext();
 					}
 				}
 			}

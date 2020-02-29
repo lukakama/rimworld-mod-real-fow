@@ -11,7 +11,7 @@
 //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
-using Harmony;
+using HarmonyLib;
 using RimWorld;
 using RimWorldRealFoW.SectionLayers;
 using RimWorldRealFoW.ShadowCasters;
@@ -256,7 +256,7 @@ namespace RimWorldRealFoW {
 				ref IntVec3 cell = ref idxToCellCache[idx];
 
 				knownCells[idx] = true;
-
+				
 				Designation designation = mineDesignationGrid[idx];
 				if (designation != null && cell.GetFirstMineable(map) == null) {
 					designation.Delete();
@@ -264,6 +264,11 @@ namespace RimWorldRealFoW {
 
 				if (initialized) {
 					setMapMeshDirtyFlag(idx);
+
+					// Refresh overlays
+					map.fertilityGrid.Drawer.SetDirty();
+					map.roofGrid.Drawer.SetDirty();
+					map.terrainGrid.Drawer.SetDirty();
 				}
 
 				if (compHideFromPlayerGridCount[idx] != 0) {
@@ -280,11 +285,20 @@ namespace RimWorldRealFoW {
 			if ((++factionShownCells[idx] == 1) && faction.def.isPlayer) {
 				ref IntVec3 cell = ref idxToCellCache[idx];
 
-				knownCells[idx] = true;
+				if (!knownCells[idx]) {
+					knownCells[idx] = true;
 
-				Designation designation = mineDesignationGrid[idx];
-				if (designation != null && cell.GetFirstMineable(map) == null) {
-					designation.Delete();
+					// Refresh overlays
+					if (initialized) {
+						map.fertilityGrid.Drawer.SetDirty();
+						map.roofGrid.Drawer.SetDirty();
+						map.terrainGrid.Drawer.SetDirty();
+					}
+
+					Designation designation = mineDesignationGrid[idx];
+					if (designation != null && cell.GetFirstMineable(map) == null) {
+						designation.Delete();
+					}
 				}
 
 				if (initialized) {
