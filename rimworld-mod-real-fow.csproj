@@ -430,19 +430,20 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-      xcopy /Q /Y /S /I "$(ProjectDir)About\*" "$(TargetDir)..\About"
+    <PostBuildEvent>xcopy /Q /Y /S /I "$(ProjectDir)About\*" "$(TargetDir)..\About"
       xcopy /Q /Y /S /I "$(ProjectDir)Defs\*" "$(TargetDir)..\Defs"
       xcopy /Q /Y /S /I "$(ProjectDir)Textures\*" "$(TargetDir)..\Textures"
       xcopy /Q /Y /S /I "$(ProjectDir)Languages\*" "$(TargetDir)..\Languages"
       xcopy /Q /Y /S /I "$(ProjectDir)1.0\*" "$(TargetDir)..\1.0"
       xcopy /Q /Y "$(ProjectDir)LoadFolders.xml" "$(TargetDir)..\"
-    </PostBuildEvent>
+</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>
-      FOR /D %%p IN ("$(TargetDir)..\*.*") DO rmdir "%%p" /s /q
-    </PreBuildEvent>
+    <PreBuildEvent>del /Q "$(TargetDir)\*"
+      rd /S /Q "$(TargetDir)..\Defs"
+      rd /S /Q "$(TargetDir)..\Textures"
+      rd /S /Q "$(TargetDir)..\Languages"
+      rd /S /Q "$(TargetDir)..\1.0"</PreBuildEvent>
   </PropertyGroup>
   <Target Name="AfterBuild" Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Exec WorkingDirectory="$(TargetDir)" Command="xcopy /Q /Y /S /I &quot;$(ProjectDir)libs\Debug\*&quot; &quot;$(TargetDir)&quot;" />
