@@ -110,6 +110,7 @@ namespace RimWorldRealFoW {
 			patchMethod(typeof(LetterStack), typeof(_LetterStack), "ReceiveLetter", typeof(TaggedString), typeof(TaggedString), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(Quest), typeof(List<ThingDef>), typeof(string));
 
 			patchMethod(typeof(MoteBubble), typeof(_MoteBubble), "Draw", new Type[] {});
+			patchMethod(typeof(GenView), typeof(_GenView), "ShouldSpawnMotesAt", new Type[]{typeof(IntVec3), typeof(Map)});
 
 			patchMethod(typeof(FertilityGrid), typeof(_FertilityGrid), "CellBoolDrawerGetBoolInt");
 			patchMethod(typeof(TerrainGrid), typeof(_TerrainGrid), "CellBoolDrawerGetBoolInt");
